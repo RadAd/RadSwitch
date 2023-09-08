@@ -106,7 +106,7 @@ void ShowLastError(LPCTSTR msg, LPCTSTR function)
 {
     TCHAR fullmsg[1024];
     wsprintf(fullmsg, TEXT("%s - Failed in %s"), msg, function);
-    MessageBox(g_hWnd, fullmsg, TEXT("RadSwitch"), MB_OK | MB_ICONERROR);
+    MessageBox(g_hWnd, fullmsg, TEXT("Rad Switch"), MB_OK | MB_ICONERROR);
 }
 
 #define CHECK(x) if (!(x)) ShowLastError(TEXT(#x), TEXT(__FUNCTION__));
@@ -280,20 +280,6 @@ BOOL QueryFullProcessImageNameFromHwnd(HWND hWnd, _Out_writes_to_(dwSize, dwSize
     return TRUE;
 }
 
-static BOOL CALLBACK MyEnumWindows(HWND hWnd, LPARAM lParam)
-{
-    std::vector<HWND>& w(*reinterpret_cast<std::vector<HWND>*>(lParam));
-    w.push_back(hWnd);
-    return TRUE;
-}
-
-static BOOL CALLBACK MyEnumMonitors(HMONITOR hMonitor, HDC hDC, LPRECT pRect, LPARAM lParam)
-{
-    std::vector<HMONITOR>& w(*reinterpret_cast<std::vector<HMONITOR>*>(lParam));
-    w.push_back(hMonitor);
-    return TRUE;
-}
-
 void GetProductName(LPCTSTR strFileName, LPTSTR lpszBuffer)
 {
     DWORD	Dummy = 0;
@@ -388,6 +374,13 @@ static LRESULT CALLBACK KeyboardllHook(const int nCode, const WPARAM wParam, con
     return CallNextHookEx(g_hHook, nCode, wParam, lParam);
 }
 
+static BOOL CALLBACK MyEnumWindows(HWND hWnd, LPARAM lParam)
+{
+    std::vector<HWND>& w(*reinterpret_cast<std::vector<HWND>*>(lParam));
+    w.push_back(hWnd);
+    return TRUE;
+}
+
 std::vector<HWND> GetWindows()
 {
     std::vector<HWND> w;
@@ -395,11 +388,41 @@ std::vector<HWND> GetWindows()
     return w;
 }
 
+#if 0
+static BOOL CALLBACK MyEnumMonitors(HMONITOR hMonitor, HDC hDC, LPRECT pRect, LPARAM lParam)
+{
+    std::vector<HMONITOR>& w(*reinterpret_cast<std::vector<HMONITOR>*>(lParam));
+    w.push_back(hMonitor);
+    return TRUE;
+}
+
 std::vector<HMONITOR> GetMonitors()
 {
     std::vector<HMONITOR> m;
     EnumDisplayMonitors(NULL, nullptr, MyEnumMonitors, reinterpret_cast<LPARAM>(&m));
     return m;
+}
+
+HMONITOR GetPrimaryMonitor(const std::vector<HMONITOR>& ms)
+{
+    for (HMONITOR m : ms)
+    {
+        MONITORINFO mi = { sizeof(MONITORINFO) };
+        GetMonitorInfo(m, &mi);
+        if (mi.dwFlags & MONITORINFOF_PRIMARY)
+            return m;
+    }
+    return ms.front();
+}
+#endif
+
+RECT GetPosition(HMONITOR hMonitor)
+{
+    MONITORINFO MonitorInfo = { sizeof(MONITORINFO) };
+    GetMonitorInfo(hMonitor, &MonitorInfo);
+    RECT r(MonitorInfo.rcMonitor);
+    InflateRect(&r, Width(MonitorInfo.rcMonitor) / -4, Height(MonitorInfo.rcMonitor) / -3);
+    return r;
 }
 
 class ListBox
@@ -589,7 +612,7 @@ class RootWindow : public Window
 public:
     static bool IsExisting() { return FindWindow(ClassName(), nullptr) != NULL; }
     static ATOM Register() { return WindowManager<RootWindow>::Register(); }
-    static RootWindow* Create(HMONITOR hMonitor) { return WindowManager<RootWindow>::Create(hMonitor); }
+    static RootWindow* Create() { return WindowManager<RootWindow>::Create(); }
 
 protected:
     static void GetCreateWindow(CREATESTRUCT& cs);
@@ -611,27 +634,15 @@ private:
     void FillList(HWND hActiveWnd, LPCTSTR lpExeActive);
     void Switch(int iCaret);
 
-    HMONITOR m_hMonitor{ NULL };
-    RECT m_rcOrigWnd = {};
     ListBoxOwnerDrawnFixed m_hWndChild;
 };
 
 void RootWindow::GetCreateWindow(CREATESTRUCT& cs)
 {
     Window::GetCreateWindow(cs);
-    cs.lpszName = TEXT("RadSwitch");
+    cs.lpszName = TEXT("Rad Switch");
     cs.style = WS_POPUP | WS_BORDER;
     cs.dwExStyle |= WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
-
-    HMONITOR hMonitor = (HMONITOR) cs.lpCreateParams;
-    MONITORINFO MonitorInfo = { sizeof(MONITORINFO) };
-    GetMonitorInfo(hMonitor, &MonitorInfo);
-    RECT r(MonitorInfo.rcMonitor);
-    InflateRect(&r, Width(MonitorInfo.rcMonitor)/-4, Height(MonitorInfo.rcMonitor)/-3);
-    cs.x = r.left;
-    cs.y = r.top;
-    cs.cx = Width(r);
-    cs.cy = Height(r);
 }
 
 void RootWindow::GetWndClass(WNDCLASS& wc)
@@ -643,8 +654,6 @@ void RootWindow::GetWndClass(WNDCLASS& wc)
 
 BOOL RootWindow::OnCreate(const LPCREATESTRUCT lpCreateStruct)
 {
-    m_hMonitor = (HMONITOR) lpCreateStruct->lpCreateParams;
-    GetClientRect(*this, &m_rcOrigWnd);
     SetWindowBlur(*this);
 
     RECT r;
@@ -747,11 +756,9 @@ LRESULT RootWindow::HandleMessage(const UINT uMsg, const WPARAM wParam, const LP
         {
             if (true)
             {
-                RECT rcWnd(m_rcOrigWnd);
+                RECT rcWnd(GetPosition(MonitorFromWindow(hActiveWnd, MONITOR_DEFAULTTOPRIMARY)));
                 const RECT rcList = CalcSizeListBox(m_hWndChild, Height(rcWnd));
                 rcWnd.bottom = rcWnd.top + Height(rcList);
-                //ClientToScreen(*this, );
-                MapWindowPoints(*this, NULL, reinterpret_cast<POINT*>(&rcWnd), 2);
                 AdjustWindowRect(&rcWnd, GetWindowStyle(*this), FALSE);
                 SetWindowPos(*this, NULL,
                     rcWnd.left, rcWnd.top, Width(rcWnd), Height(rcWnd),
@@ -874,7 +881,7 @@ bool Run(_In_ const LPCTSTR lpCmdLine, _In_ const int nShowCmd)
 {
     if (RootWindow::IsExisting())
     {
-        MessageBox(NULL, TEXT("Process already exists."), TEXT("RadSwitch"), MB_ICONERROR | MB_OK);
+        MessageBox(NULL, TEXT("Process already exists."), TEXT("Rad Switch"), MB_ICONERROR | MB_OK);
         return false;
     }
 
@@ -888,17 +895,16 @@ bool Run(_In_ const LPCTSTR lpCmdLine, _In_ const int nShowCmd)
 
     g_Theme.brWindow = CreateSolidBrush(g_Theme.clrWindow);
 
-    const std::vector<HMONITOR> m = GetMonitors();
-
     if (RootWindow::Register() == 0)
     {
-        MessageBox(NULL, TEXT("Error registering window class"), TEXT("RadSwitch"), MB_ICONERROR | MB_OK);
+        MessageBox(NULL, TEXT("Error registering window class"), TEXT("Rad Switch"), MB_ICONERROR | MB_OK);
         return false;
     }
-    RootWindow* prw = RootWindow::Create(m.front());
+
+    RootWindow* prw = RootWindow::Create();
     if (prw == nullptr)
     {
-        MessageBox(NULL, TEXT("Error creating root window"), TEXT("RadSwitch"), MB_ICONERROR | MB_OK);
+        MessageBox(NULL, TEXT("Error creating root window"), TEXT("Rad Switch"), MB_ICONERROR | MB_OK);
         return false;
     }
 

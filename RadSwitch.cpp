@@ -145,6 +145,7 @@ struct Theme
     COLORREF clrHighlight = GetSysColor(COLOR_HIGHLIGHT);
     COLORREF clrWindowText = GetSysColor(COLOR_WINDOWTEXT);
     COLORREF clrHighlightText = GetSysColor(COLOR_HIGHLIGHTTEXT);
+    COLORREF clrGrayText = GetSysColor(COLOR_GRAYTEXT);
     HBRUSH   brWindow = NULL;
 };
 
@@ -487,6 +488,7 @@ private:
         LPARAM lParam;
         HICON hIcon;
         TCHAR strRight[MAX_PATH];
+        BOOL bGray;
     };
 
     ItemData* GetInternalItemData(int i)
@@ -541,6 +543,13 @@ public:
         InvalidateItem(i);
     }
 
+    void SetItemGray(int i, BOOL b)
+    {
+        ItemData* pData = GetInternalItemData(i);
+        pData->bGray = b;
+        InvalidateItem(i);
+    }
+
     void InvalidateItem(int i)
     {
         if (IsWindow(*this))
@@ -571,7 +580,7 @@ private:
             const ItemData* pData = reinterpret_cast<ItemData*>(lpDrawItem->itemData);
 
             const COLORREF clrForeground = SetTextColor(lpDrawItem->hDC,
-                lpDrawItem->itemState & ODS_SELECTED ? g_Theme.clrHighlightText : g_Theme.clrWindowText);
+                lpDrawItem->itemState & ODS_SELECTED ? g_Theme.clrHighlightText : (pData->bGray ? g_Theme.clrGrayText : g_Theme.clrWindowText));
 
             const COLORREF clrBackground = SetBkColor(lpDrawItem->hDC,
                 lpDrawItem->itemState & ODS_SELECTED ? g_Theme.clrHighlight : g_Theme.clrWindow);
@@ -860,8 +869,8 @@ void RootWindow::FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonito
 
                 TCHAR title[1024];
                 GetWindowText(hWnd, title, ARRAYSIZE(title));
-                if (IsMinimized(hWnd))
-                    lstrcat(title, TEXT("*"));
+                //if (IsMinimized(hWnd))
+                    //lstrcat(title, TEXT("*"));
 
                 TCHAR strProduct[1024] = TEXT("");
                 GetProductName(strExe, strProduct);
@@ -891,6 +900,7 @@ void RootWindow::FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonito
                     m_hWndChild.SetItemRightString(i, strProduct);
                 else
                     m_hWndChild.SetItemRightString(i, PathFindFileName(strExe));
+                m_hWndChild.SetItemGray(i, IsMinimized(hWnd));
                 m_hWndChild.SetItemData(i, reinterpret_cast<LPARAM>(hWnd));
                 if (hActiveWnd == hWnd || hActiveWnd == GetLastActivePopup(hWnd))
                     selected = i;
@@ -929,6 +939,7 @@ bool Run(_In_ const LPCTSTR lpCmdLine, _In_ const int nShowCmd)
         g_Theme.clrHighlight = RGB(61, 61, 61);
         g_Theme.clrWindowText = RGB(250, 250, 250);
         g_Theme.clrHighlightText = g_Theme.clrWindowText;
+        g_Theme.clrGrayText = RGB(128, 128, 128);
     }
 
     g_Theme.brWindow = CreateSolidBrush(g_Theme.clrWindow);

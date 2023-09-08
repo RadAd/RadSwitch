@@ -631,7 +631,7 @@ private:
 
     static LPCTSTR ClassName() { return TEXT("RadSwitch"); }
 
-    void FillList(HWND hActiveWnd, LPCTSTR lpExeActive);
+    void FillList(HWND hActiveWnd, LPCTSTR lpExeActive, HMONITOR hMonitor);
     void Switch(int iCaret);
 
     ListBoxOwnerDrawnFixed m_hWndChild;
@@ -746,17 +746,19 @@ LRESULT RootWindow::HandleMessage(const UINT uMsg, const WPARAM wParam, const LP
         HANDLE_MSG(WM_ACTIVATE, OnActivate);
     case WM_START:
     {
-        HWND hActiveWnd = GetForegroundWindow();
+        const HWND hActiveWnd = GetForegroundWindow();
         TCHAR strExe[MAX_PATH]{ TEXT("") };
         if (!wParam || !QueryFullProcessImageNameFromHwnd(hActiveWnd, strExe, ARRAYSIZE(strExe)))
             strExe[0] = TEXT('\0');
 
-        FillList(hActiveWnd, strExe);
+        const HMONITOR hMonitor = MonitorFromWindow(hActiveWnd, MONITOR_DEFAULTTOPRIMARY);
+
+        FillList(hActiveWnd, strExe, hMonitor);
         if (m_hWndChild.GetCount() > 0) // TODO Maybe > 1
         {
             if (true)
             {
-                RECT rcWnd(GetPosition(MonitorFromWindow(hActiveWnd, MONITOR_DEFAULTTOPRIMARY)));
+                RECT rcWnd(GetPosition(hMonitor));
                 const RECT rcList = CalcSizeListBox(m_hWndChild, Height(rcWnd));
                 rcWnd.bottom = rcWnd.top + Height(rcList);
                 AdjustWindowRect(&rcWnd, GetWindowStyle(*this), FALSE);
@@ -794,7 +796,7 @@ LRESULT RootWindow::HandleMessage(const UINT uMsg, const WPARAM wParam, const LP
     return ret;
 }
 
-void RootWindow::FillList(HWND hActiveWnd, LPCTSTR lpExeActive)
+void RootWindow::FillList(HWND hActiveWnd, LPCTSTR lpExeActive, HMONITOR hMonitor)
 {
     const std::vector<HWND> w = GetWindows();
 
@@ -813,17 +815,19 @@ void RootWindow::FillList(HWND hActiveWnd, LPCTSTR lpExeActive)
             const DWORD dwExStyle = GetWindowExStyle(hWnd);
             if (IsWindowVisible(hWnd) && (CloakedVal == 0) && NoneSet(dwExStyle, WS_EX_TOOLWINDOW) && IsAltTabWindow(hWnd))
             {
-                IsAltTabWindow(hWnd);
-                TCHAR title[1024];
-                GetWindowText(hWnd, title, ARRAYSIZE(title));
-                if (IsMinimized(hWnd))
-                    lstrcat(title, TEXT("*"));
+                if (hMonitor != NULL && MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY) != hMonitor)
+                    continue;
 
                 TCHAR strExe[MAX_PATH] = TEXT("");
                 QueryFullProcessImageNameFromHwnd(hWnd, strExe, ARRAYSIZE(strExe));
 
                 if (lpExeActive[0] != TEXT('\0') && lstrcmp(lpExeActive, strExe) != 0)
                     continue;
+
+                TCHAR title[1024];
+                GetWindowText(hWnd, title, ARRAYSIZE(title));
+                if (IsMinimized(hWnd))
+                    lstrcat(title, TEXT("*"));
 
                 TCHAR strProduct[1024] = TEXT("");
                 GetProductName(strExe, strProduct);

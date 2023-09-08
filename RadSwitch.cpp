@@ -6,6 +6,7 @@
 #include <appmodel.h>
 #include <algorithm>
 #include <vector>
+#include <iterator>
 //#include <tchar.h>
 
 #include "resource.h"
@@ -344,11 +345,11 @@ static LRESULT CALLBACK KeyboardllHook(const int nCode, const WPARAM wParam, con
                 else switch (kbdStruct->vkCode)
                 {
                 case VK_TAB:
-                    //SendMessage(g_hWnd, WM_START, FALSE, 0);
+                    //SendMessage(g_hWnd, WM_START, FALSE, (LPARAM) MonitorFromWindow(GetForegroundWindow(), MONITOR_DEFAULTTOPRIMARY));
                     SendHotKey(HK_1_MOD, HK_1_KEY);
                     return 1;
                 case VK_OEM_3: // Backtick
-                    //PostMessage(g_hWnd, WM_START, TRUE, 0);
+                    //PostMessage(g_hWnd, WM_START, TRUE, (LPARAM) MonitorFromWindow(GetForegroundWindow(), MONITOR_DEFAULTTOPRIMARY));
                     SendHotKey(HK_2_MOD, HK_2_KEY);
                     return 1;
                 }
@@ -388,7 +389,6 @@ std::vector<HWND> GetWindows()
     return w;
 }
 
-#if 0
 static BOOL CALLBACK MyEnumMonitors(HMONITOR hMonitor, HDC hDC, LPRECT pRect, LPARAM lParam)
 {
     std::vector<HMONITOR>& w(*reinterpret_cast<std::vector<HMONITOR>*>(lParam));
@@ -414,7 +414,30 @@ HMONITOR GetPrimaryMonitor(const std::vector<HMONITOR>& ms)
     }
     return ms.front();
 }
-#endif
+
+HMONITOR GetPrevMonitor(HMONITOR hMonitor)
+{
+    std::vector<HMONITOR> ms = GetMonitors();
+    auto it = std::find(ms.begin(), ms.end(), hMonitor);
+    if (it == ms.end())
+        return GetPrimaryMonitor(ms);
+    else if (*it == ms.front())
+        return ms.back();
+    else
+        return *std::prev(it);
+}
+
+HMONITOR GetNextMonitor(HMONITOR hMonitor)
+{
+    std::vector<HMONITOR> ms = GetMonitors();
+    auto it = std::find(ms.begin(), ms.end(), hMonitor);
+    if (it == ms.end())
+        return GetPrimaryMonitor(ms);
+    else if (*it == ms.back())
+        return ms.front();
+    else
+        return *std::next(it);
+}
 
 RECT GetPosition(HMONITOR hMonitor)
 {
@@ -635,6 +658,7 @@ private:
     void Switch(int iCaret);
 
     ListBoxOwnerDrawnFixed m_hWndChild;
+    HMONITOR m_hMonitor = NULL;
 };
 
 void RootWindow::GetCreateWindow(CREATESTRUCT& cs)
@@ -698,6 +722,7 @@ int RootWindow::OnVkeyToItem(UINT vk, HWND hWndListbox, int iCaret)
 {
     if (hWndListbox == m_hWndChild)
     {
+        SetHandled(true);
         switch (vk)
         {
         case VK_TAB: case VK_OEM_3:
@@ -708,6 +733,14 @@ int RootWindow::OnVkeyToItem(UINT vk, HWND hWndListbox, int iCaret)
             return -2;
         case VK_RETURN: case VK_SPACE:
             Switch(iCaret);
+            return -2;
+        case VK_LEFT:
+            ShowWindow(*this, SW_HIDE);
+            PostMessage(g_hWnd, WM_START, FALSE, (LPARAM) GetPrevMonitor(m_hMonitor));
+            return -2;
+        case VK_RIGHT:
+            ShowWindow(*this, SW_HIDE);
+            PostMessage(g_hWnd, WM_START, FALSE, (LPARAM) GetNextMonitor(m_hMonitor));
             return -2;
         default:
             return -1;
@@ -721,8 +754,8 @@ void RootWindow::OnHotKey(int idHotKey, UINT fuModifiers, UINT vk)
 {
     switch (idHotKey)
     {
-    case HK_1: if (GetForegroundWindow() != *this) PostMessage(g_hWnd, WM_START, FALSE, 0); break;
-    case HK_2: if (GetForegroundWindow() != *this) PostMessage(g_hWnd, WM_START, TRUE, 0); break;
+    case HK_1: if (GetForegroundWindow() != *this) PostMessage(g_hWnd, WM_START, FALSE, (LPARAM) MonitorFromWindow(GetForegroundWindow(), MONITOR_DEFAULTTOPRIMARY)); break;
+    case HK_2: if (GetForegroundWindow() != *this) PostMessage(g_hWnd, WM_START, TRUE, (LPARAM) MonitorFromWindow(GetForegroundWindow(), MONITOR_DEFAULTTOPRIMARY)); break;
     }
 }
 
@@ -751,14 +784,14 @@ LRESULT RootWindow::HandleMessage(const UINT uMsg, const WPARAM wParam, const LP
         if (!wParam || !QueryFullProcessImageNameFromHwnd(hActiveWnd, strExe, ARRAYSIZE(strExe)))
             strExe[0] = TEXT('\0');
 
-        const HMONITOR hMonitor = MonitorFromWindow(hActiveWnd, MONITOR_DEFAULTTOPRIMARY);
+        m_hMonitor = (HMONITOR) lParam;
 
-        FillList(hActiveWnd, strExe, hMonitor);
+        FillList(hActiveWnd, strExe, m_hMonitor);
         if (m_hWndChild.GetCount() > 0) // TODO Maybe > 1
         {
             if (true)
             {
-                RECT rcWnd(GetPosition(hMonitor));
+                RECT rcWnd(GetPosition(m_hMonitor));
                 const RECT rcList = CalcSizeListBox(m_hWndChild, Height(rcWnd));
                 rcWnd.bottom = rcWnd.top + Height(rcList);
                 AdjustWindowRect(&rcWnd, GetWindowStyle(*this), FALSE);

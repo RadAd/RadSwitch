@@ -90,6 +90,9 @@ inline LONG Height(RECT r)
 // https://devblogs.microsoft.com/oldnewthing/20071008-00/?p=24863
 BOOL IsAltTabWindow(HWND hwnd)
 {
+    if (GetWindow(hwnd, GW_OWNER) != NULL)
+        return FALSE;
+
     // Start at the root owner
     HWND hwndWalk = GetAncestor(hwnd, GA_ROOTOWNER);
     // See if we are the last active visible popup
@@ -654,7 +657,7 @@ private:
 
     static LPCTSTR ClassName() { return TEXT("RadSwitch"); }
 
-    void FillList(HWND hActiveWnd, LPCTSTR lpExeActive, HMONITOR hMonitor);
+    void FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonitor);
     void Switch(int iCaret);
 
     ListBoxOwnerDrawnFixed m_hWndChild;
@@ -779,14 +782,10 @@ LRESULT RootWindow::HandleMessage(const UINT uMsg, const WPARAM wParam, const LP
         HANDLE_MSG(WM_ACTIVATE, OnActivate);
     case WM_START:
     {
-        const HWND hActiveWnd = GetForegroundWindow();
-        TCHAR strExe[MAX_PATH]{ TEXT("") };
-        if (!wParam || !QueryFullProcessImageNameFromHwnd(hActiveWnd, strExe, ARRAYSIZE(strExe)))
-            strExe[0] = TEXT('\0');
-
+        const HWND hActiveWnd = GetAncestor(GetForegroundWindow(), GA_ROOTOWNER);
         m_hMonitor = (HMONITOR) lParam;
 
-        FillList(hActiveWnd, strExe, m_hMonitor);
+        FillList(hActiveWnd, (BOOL) wParam, m_hMonitor);
         if (m_hWndChild.GetCount() > 0) // TODO Maybe > 1
         {
             if (true)
@@ -829,8 +828,13 @@ LRESULT RootWindow::HandleMessage(const UINT uMsg, const WPARAM wParam, const LP
     return ret;
 }
 
-void RootWindow::FillList(HWND hActiveWnd, LPCTSTR lpExeActive, HMONITOR hMonitor)
+void RootWindow::FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonitor)
 {
+    TCHAR strActiveExe[MAX_PATH]{ TEXT("") };
+    if (!FilterToActive || !QueryFullProcessImageNameFromHwnd(hActiveWnd, strActiveExe, ARRAYSIZE(strActiveExe)))
+        strActiveExe[0] = TEXT('\0');
+
+
     const std::vector<HWND> w = GetWindows();
 
     int selected = -1;
@@ -846,15 +850,12 @@ void RootWindow::FillList(HWND hActiveWnd, LPCTSTR lpExeActive, HMONITOR hMonito
 
             const DWORD dwStyle = GetWindowStyle(hWnd);
             const DWORD dwExStyle = GetWindowExStyle(hWnd);
-            if (IsWindowVisible(hWnd) && (CloakedVal == 0) && NoneSet(dwExStyle, WS_EX_TOOLWINDOW) && IsAltTabWindow(hWnd))
+            if (IsWindowVisible(hWnd) && (CloakedVal == 0) && NoneSet(dwExStyle, WS_EX_TOOLWINDOW) && IsAltTabWindow(hWnd) && (hMonitor == NULL || MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY) == hMonitor))
             {
-                if (hMonitor != NULL && MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY) != hMonitor)
-                    continue;
-
                 TCHAR strExe[MAX_PATH] = TEXT("");
                 QueryFullProcessImageNameFromHwnd(hWnd, strExe, ARRAYSIZE(strExe));
 
-                if (lpExeActive[0] != TEXT('\0') && lstrcmp(lpExeActive, strExe) != 0)
+                if (FilterToActive && lstrcmp(strActiveExe, strExe) != 0)
                     continue;
 
                 TCHAR title[1024];

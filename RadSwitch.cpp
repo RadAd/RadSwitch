@@ -670,6 +670,7 @@ private:
     void Switch(int iCaret);
 
     ListBoxOwnerDrawnFixed m_hWndChild;
+    BOOL m_FilterToActive = FALSE;
     HMONITOR m_hMonitor = NULL;
 };
 
@@ -748,11 +749,11 @@ int RootWindow::OnVkeyToItem(UINT vk, HWND hWndListbox, int iCaret)
             return -2;
         case VK_LEFT:
             ShowWindow(*this, SW_HIDE);
-            PostMessage(g_hWnd, WM_START, FALSE, (LPARAM) GetPrevMonitor(m_hMonitor));
+            PostMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) GetPrevMonitor(m_hMonitor));
             return -2;
         case VK_RIGHT:
             ShowWindow(*this, SW_HIDE);
-            PostMessage(g_hWnd, WM_START, FALSE, (LPARAM) GetNextMonitor(m_hMonitor));
+            PostMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) GetNextMonitor(m_hMonitor));
             return -2;
         default:
             return -1;
@@ -792,9 +793,10 @@ LRESULT RootWindow::HandleMessage(const UINT uMsg, const WPARAM wParam, const LP
     case WM_START:
     {
         const HWND hActiveWnd = GetAncestor(GetForegroundWindow(), GA_ROOTOWNER);
+        m_FilterToActive = (BOOL) wParam;
         m_hMonitor = (HMONITOR) lParam;
 
-        FillList(hActiveWnd, (BOOL) wParam, m_hMonitor);
+        FillList(hActiveWnd, m_FilterToActive, m_hMonitor);
         if (m_hWndChild.GetCount() > 0) // TODO Maybe > 1
         {
             if (true)
@@ -814,6 +816,7 @@ LRESULT RootWindow::HandleMessage(const UINT uMsg, const WPARAM wParam, const LP
 #else
             ForceForegroundWindow(*this);
 #endif
+            ret = TRUE;
         }
     }
         break;

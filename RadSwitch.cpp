@@ -9,7 +9,12 @@
 #include <iterator>
 //#include <tchar.h>
 
+#include "WindowsPlus.h"
+#include "ListBoxPlus.h"
+
 #include "resource.h"
+
+Theme g_Theme;
 
 #define HK_1_MOD    (MOD_ALT | MOD_CONTROL | MOD_SHIFT)
 #define HK_1_KEY    (VK_OEM_FJ_TOUROKU)
@@ -33,60 +38,6 @@ bool IsTaskSwitcher(HWND hWnd)
     return lstrcmp(strClass, TEXT("MultitaskingViewFrame")) == 0;
 }
 
-inline bool AllSet(DWORD v, DWORD set)
-{
-    return (v & set) == set;
-}
-
-inline bool NoneSet(DWORD v, DWORD set)
-{
-    return (v & set) == 0;
-}
-
-UINT MySendKey(WORD wVk, bool bUp)
-{
-    INPUT i = {};
-    i.type = INPUT_KEYBOARD;
-    i.ki.wVk = wVk;
-    if (bUp)
-        i.ki.dwFlags |= KEYEVENTF_KEYUP;
-    return SendInput(1, &i, sizeof(i));
-}
-
-void SendHotKey(_In_ UINT fsModifiers, _In_ UINT vk)
-{
-    const bool bAltDown = GetKeyState(VK_MENU) < 0;
-    const bool bAltCtrl = GetKeyState(VK_CONTROL) < 0;
-    const bool bAltShift = GetKeyState(VK_SHIFT) < 0;
-
-    if (!bAltDown && AllSet(fsModifiers, MOD_ALT))
-        MySendKey(VK_MENU, false);
-    if (!bAltCtrl && AllSet(fsModifiers, MOD_CONTROL))
-        MySendKey(VK_CONTROL, false);
-    if (!bAltShift && AllSet(fsModifiers, MOD_SHIFT))
-        MySendKey(VK_SHIFT, false);
-
-    MySendKey(vk, false);
-    MySendKey(vk, true);
-
-    if (!bAltShift && AllSet(fsModifiers, MOD_SHIFT))
-        MySendKey(VK_SHIFT, true);
-    if (!bAltCtrl && AllSet(fsModifiers, MOD_CONTROL))
-        MySendKey(VK_CONTROL, true);
-    if (!bAltDown && AllSet(fsModifiers, MOD_ALT))
-        MySendKey(VK_MENU, true);
-}
-
-inline LONG Width(RECT r)
-{
-    return r.right - r.left;
-}
-
-inline LONG Height(RECT r)
-{
-    return r.bottom - r.top;
-}
-
 void ShowLastError(LPCTSTR msg, LPCTSTR function)
 {
     TCHAR fullmsg[1024];
@@ -96,6 +47,7 @@ void ShowLastError(LPCTSTR msg, LPCTSTR function)
 
 #define CHECK(x) if (!(x)) ShowLastError(TEXT(#x), TEXT(__FUNCTION__));
 
+#if 0
 void ForceForegroundWindow(HWND hWnd)
 {
     DWORD windowThreadProcessId = GetWindowThreadProcessId(GetForegroundWindow(), nullptr);
@@ -119,84 +71,7 @@ void ForceForegroundWindow(HWND hWnd)
         SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, &timeout, 0);
     }
 }
-
-struct Theme
-{
-    COLORREF clrWindow = GetSysColor(COLOR_WINDOW);
-    COLORREF clrHighlight = GetSysColor(COLOR_HIGHLIGHT);
-    COLORREF clrWindowText = GetSysColor(COLOR_WINDOWTEXT);
-    COLORREF clrHighlightText = GetSysColor(COLOR_HIGHLIGHTTEXT);
-    COLORREF clrGrayText = GetSysColor(COLOR_GRAYTEXT);
-    HBRUSH   brWindow = NULL;
-};
-
-Theme g_Theme;
-
-void SetWindowBlur(HWND hWnd)
-{
-    const HINSTANCE hModule = GetModuleHandle(TEXT("user32.dll"));
-    if (hModule)
-    {
-        typedef enum _ACCENT_STATE {
-            ACCENT_DISABLED,
-            ACCENT_ENABLE_GRADIENT,
-            ACCENT_ENABLE_TRANSPARENTGRADIENT,
-            ACCENT_ENABLE_BLURBEHIND,
-            ACCENT_ENABLE_ACRYLICBLURBEHIND,
-            ACCENT_INVALID_STATE
-        } ACCENT_STATE;
-        struct ACCENTPOLICY
-        {
-            ACCENT_STATE nAccentState;
-            DWORD nFlags;
-            DWORD nColor;
-            DWORD nAnimationId;
-        };
-        typedef enum _WINDOWCOMPOSITIONATTRIB {
-            WCA_UNDEFINED = 0,
-            WCA_NCRENDERING_ENABLED = 1,
-            WCA_NCRENDERING_POLICY = 2,
-            WCA_TRANSITIONS_FORCEDISABLED = 3,
-            WCA_ALLOW_NCPAINT = 4,
-            WCA_CAPTION_BUTTON_BOUNDS = 5,
-            WCA_NONCLIENT_RTL_LAYOUT = 6,
-            WCA_FORCE_ICONIC_REPRESENTATION = 7,
-            WCA_EXTENDED_FRAME_BOUNDS = 8,
-            WCA_HAS_ICONIC_BITMAP = 9,
-            WCA_THEME_ATTRIBUTES = 10,
-            WCA_NCRENDERING_EXILED = 11,
-            WCA_NCADORNMENTINFO = 12,
-            WCA_EXCLUDED_FROM_LIVEPREVIEW = 13,
-            WCA_VIDEO_OVERLAY_ACTIVE = 14,
-            WCA_FORCE_ACTIVEWINDOW_APPEARANCE = 15,
-            WCA_DISALLOW_PEEK = 16,
-            WCA_CLOAK = 17,
-            WCA_CLOAKED = 18,
-            WCA_ACCENT_POLICY = 19,
-            WCA_FREEZE_REPRESENTATION = 20,
-            WCA_EVER_UNCLOAKED = 21,
-            WCA_VISUAL_OWNER = 22,
-            WCA_LAST = 23
-        } WINDOWCOMPOSITIONATTRIB;
-        struct WINCOMPATTRDATA
-        {
-            WINDOWCOMPOSITIONATTRIB nAttribute;
-            PVOID pData;
-            ULONG ulDataSize;
-        };
-        typedef BOOL(WINAPI* pSetWindowCompositionAttribute)(HWND, WINCOMPATTRDATA*);
-        const pSetWindowCompositionAttribute SetWindowCompositionAttribute = (pSetWindowCompositionAttribute) GetProcAddress(hModule, "SetWindowCompositionAttribute");
-        if (SetWindowCompositionAttribute)
-        {
-            ACCENTPOLICY policy = { ACCENT_ENABLE_ACRYLICBLURBEHIND, 0, 0x80000000, 0 };
-            //ACCENTPOLICY policy = { ACCENT_ENABLE_BLURBEHIND };
-            WINCOMPATTRDATA data = { WCA_ACCENT_POLICY, &policy, sizeof(ACCENTPOLICY) };
-            SetWindowCompositionAttribute(hWnd, &data);
-            //DwmSetWindowAttribute(hWnd, WCA_ACCENT_POLICY, &policy, sizeof(ACCENTPOLICY));
-        }
-        //FreeLibrary(hModule);
-    }
-}
+#endif
 
 RECT CalcSizeListBox(HWND hWndLB, LONG max)
 {
@@ -222,26 +97,6 @@ inline int ListBox_WrapIndex(HWND hWnd, int i)
     return i;
 }
 
-inline DWORD MySendMessageTimeout(
-    _In_ HWND hWnd,
-    _In_ UINT Msg,
-    _In_ WPARAM wParam,
-    _In_ LPARAM lParam,
-    _In_ UINT fuFlags,
-    _In_ UINT uTimeout)
-{
-    DWORD_PTR dwResult = 0;
-    SendMessageTimeout(
-        hWnd,
-        Msg,
-        wParam,
-        lParam,
-        fuFlags,
-        uTimeout,
-        &dwResult);
-    return static_cast<DWORD>(dwResult);
-}
-
 HANDLE GetProcessHandleFromHwnd(HWND hWnd)
 {
     DWORD pid = 0;
@@ -262,7 +117,7 @@ BOOL QueryFullProcessImageNameFromHwnd(HWND hWnd, _Out_writes_to_(dwSize, dwSize
     QueryFullProcessImageName(hProcess, 0, lpExeName, &dwSize);
 
     CloseHandle(hProcess);
-    
+
     return TRUE;
 }
 
@@ -308,7 +163,6 @@ void GetProductName(LPCTSTR strFileName, LPTSTR lpszBuffer)
 
     free(Info);
 }
-
 
 static LRESULT CALLBACK KeyboardllHook(const int nCode, const WPARAM wParam, const LPARAM lParam)
 {
@@ -360,70 +214,6 @@ static LRESULT CALLBACK KeyboardllHook(const int nCode, const WPARAM wParam, con
     return CallNextHookEx(g_hHook, nCode, wParam, lParam);
 }
 
-static BOOL CALLBACK MyEnumWindows(HWND hWnd, LPARAM lParam)
-{
-    std::vector<HWND>& w(*reinterpret_cast<std::vector<HWND>*>(lParam));
-    w.push_back(hWnd);
-    return TRUE;
-}
-
-std::vector<HWND> GetWindows()
-{
-    std::vector<HWND> w;
-    EnumWindows(MyEnumWindows, reinterpret_cast<LPARAM>(&w));
-    return w;
-}
-
-static BOOL CALLBACK MyEnumMonitors(HMONITOR hMonitor, HDC hDC, LPRECT pRect, LPARAM lParam)
-{
-    std::vector<HMONITOR>& w(*reinterpret_cast<std::vector<HMONITOR>*>(lParam));
-    w.push_back(hMonitor);
-    return TRUE;
-}
-
-std::vector<HMONITOR> GetMonitors()
-{
-    std::vector<HMONITOR> m;
-    EnumDisplayMonitors(NULL, nullptr, MyEnumMonitors, reinterpret_cast<LPARAM>(&m));
-    return m;
-}
-
-HMONITOR GetPrimaryMonitor(const std::vector<HMONITOR>& ms)
-{
-    for (HMONITOR m : ms)
-    {
-        MONITORINFO mi = { sizeof(MONITORINFO) };
-        GetMonitorInfo(m, &mi);
-        if (mi.dwFlags & MONITORINFOF_PRIMARY)
-            return m;
-    }
-    return ms.front();
-}
-
-HMONITOR GetPrevMonitor(HMONITOR hMonitor)
-{
-    std::vector<HMONITOR> ms = GetMonitors();
-    auto it = std::find(ms.begin(), ms.end(), hMonitor);
-    if (it == ms.end())
-        return GetPrimaryMonitor(ms);
-    else if (*it == ms.front())
-        return ms.back();
-    else
-        return *std::prev(it);
-}
-
-HMONITOR GetNextMonitor(HMONITOR hMonitor)
-{
-    std::vector<HMONITOR> ms = GetMonitors();
-    auto it = std::find(ms.begin(), ms.end(), hMonitor);
-    if (it == ms.end())
-        return GetPrimaryMonitor(ms);
-    else if (*it == ms.back())
-        return ms.front();
-    else
-        return *std::next(it);
-}
-
 RECT GetPosition(HMONITOR hMonitor)
 {
     MONITORINFO MonitorInfo = { sizeof(MONITORINFO) };
@@ -432,194 +222,6 @@ RECT GetPosition(HMONITOR hMonitor)
     InflateRect(&r, Width(MonitorInfo.rcMonitor) / -4, Height(MonitorInfo.rcMonitor) / -3);
     return r;
 }
-
-class ListBox
-{
-public:
-    void Create(_In_ HWND hParent, _In_ DWORD dwStyle, _In_ RECT rPos, _In_ int nID)
-    {
-        const HINSTANCE hInstance = NULL;
-        m_hWnd = CreateWindow(WC_LISTBOX, nullptr, dwStyle, rPos.left, rPos.top, Width(rPos), Height(rPos), hParent, reinterpret_cast<HMENU>(static_cast<INT_PTR>(nID)), hInstance, NULL);
-    }
-
-    operator bool() const { return m_hWnd != NULL; }
-
-    operator HWND() const { return m_hWnd; }
-
-    void ResetContent() { ListBox_ResetContent(m_hWnd); }
-    int AddString(LPCTSTR lpsz) { return ListBox_AddString(m_hWnd, lpsz); }
-    int GetCount() const { return ListBox_GetCount(m_hWnd); }
-    int GetCurSel() const { return ListBox_GetCurSel(m_hWnd); }
-    LPARAM GetItemData(int i) const { return ListBox_GetItemData(m_hWnd, i); }
-    int GetItemRect(int i, LPRECT pRect) { return ListBox_GetItemRect(m_hWnd, i , pRect); }
-    int GetText(int i, LPTSTR lpszBuffer) const { return ListBox_GetText(m_hWnd, i, lpszBuffer); }
-    int SetCurSel(int i) { return ListBox_SetCurSel(m_hWnd, i); }
-    int SetItemData(int i, LPARAM data) { return ListBox_SetItemData(m_hWnd, i, data); }
-    int SetTopIndex(int i) { return ListBox_SetTopIndex(m_hWnd, i); }
-
-private:
-    HWND m_hWnd{ NULL };
-};
-
-class ListBoxOwnerDrawnFixed : public ListBox
-{
-private:
-    struct ItemData
-    {
-        LPARAM lParam;
-        HICON hIcon;
-        TCHAR strRight[MAX_PATH];
-        BOOL bGray;
-    };
-
-    ItemData* GetInternalItemData(int i)
-    {
-        const LPARAM lParam = ListBox::GetItemData(i);
-        ItemData* pData = lParam == CB_ERR ? nullptr : reinterpret_cast<ItemData*>(lParam);
-        if (pData == nullptr)
-        {
-            pData = new ItemData({});
-            ListBox::SetItemData(i, reinterpret_cast<LPARAM>(pData));
-        }
-        return pData;
-    }
-
-    const ItemData* GetInternalItemData(int i) const
-    {
-        const LPARAM lParam = ListBox::GetItemData(i);
-        ItemData* pData = lParam == CB_ERR ? nullptr : reinterpret_cast<ItemData*>(lParam);
-        return pData;
-    }
-
-public:
-    void Create(_In_ HWND hParent, _In_ DWORD dwStyle, _In_ RECT rPos, _In_ int nID)
-    {
-        m_nID = nID;
-        ListBox::Create(hParent, dwStyle | LBS_OWNERDRAWFIXED, rPos, nID);
-    }
-
-    LPARAM GetItemData(int i) const
-    {
-        const ItemData* pData = GetInternalItemData(i);
-        return pData ? pData->lParam : 0;
-    }
-
-    void SetItemData(int i, LPARAM data)
-    {
-        ItemData* pData = GetInternalItemData(i);
-        pData->lParam = data;
-    }
-
-    void SetItemIcon(int i, HICON hIcon)
-    {
-        ItemData* pData = GetInternalItemData(i);
-        pData->hIcon = hIcon;
-        InvalidateItem(i);
-    }
-
-    void SetItemRightString(int i, LPCTSTR s)
-    {
-        ItemData* pData = GetInternalItemData(i);
-        lstrcpy(pData->strRight, s);
-        InvalidateItem(i);
-    }
-
-    void SetItemGray(int i, BOOL b)
-    {
-        ItemData* pData = GetInternalItemData(i);
-        pData->bGray = b;
-        InvalidateItem(i);
-    }
-
-    void InvalidateItem(int i)
-    {
-        if (IsWindow(*this))
-        {
-            RECT r;
-            GetItemRect(i, &r);
-            InvalidateRect(*this, &r, FALSE);
-        }
-    }
-
-private:
-    void OnMeasureItem(MEASUREITEMSTRUCT* lpMeasureItem)
-    {
-        //if (lpMeasureItem->CtlID == GetWindowLong(m_hWndChild, GWL_ID))
-        if (lpMeasureItem->CtlID == m_nID)
-        {
-            lpMeasureItem->itemHeight = GetSystemMetrics(SM_CYICON) + 4;
-        }
-    }
-
-    void OnDrawItem(const DRAWITEMSTRUCT* lpDrawItem)
-    {
-        if (lpDrawItem->hwndItem == *this)
-        {
-            if (lpDrawItem->itemID == -1) // Empty item
-                return;
-
-            const ItemData* pData = reinterpret_cast<ItemData*>(lpDrawItem->itemData);
-
-            const COLORREF clrForeground = SetTextColor(lpDrawItem->hDC,
-                lpDrawItem->itemState & ODS_SELECTED ? g_Theme.clrHighlightText : (pData->bGray ? g_Theme.clrGrayText : g_Theme.clrWindowText));
-
-            const COLORREF clrBackground = SetBkColor(lpDrawItem->hDC,
-                lpDrawItem->itemState & ODS_SELECTED ? g_Theme.clrHighlight : g_Theme.clrWindow);
-
-            TEXTMETRIC tm;
-            GetTextMetrics(lpDrawItem->hDC, &tm);
-            const int y = (lpDrawItem->rcItem.bottom + lpDrawItem->rcItem.top - tm.tmHeight) / 2;
-            const int x = GetSystemMetrics(SM_CXICON) + 4;
-
-            TCHAR text[1024];
-            const int cch = GetText(lpDrawItem->itemID, text);
-
-            const UINT align = SetTextAlign(lpDrawItem->hDC, TA_RIGHT);
-            ExtTextOut(lpDrawItem->hDC, lpDrawItem->rcItem.right - 2, y,
-                ETO_CLIPPED | ETO_OPAQUE, &lpDrawItem->rcItem,
-                pData->strRight, lstrlen(pData->strRight), NULL);
-            SetTextAlign(lpDrawItem->hDC, align);
-
-            ExtTextOut(lpDrawItem->hDC, x, y,
-                ETO_CLIPPED, &lpDrawItem->rcItem,
-                text, (UINT) cch, NULL);
-
-            SetTextColor(lpDrawItem->hDC, clrForeground);
-            SetBkColor(lpDrawItem->hDC, clrBackground);
-
-            DrawIcon(lpDrawItem->hDC, lpDrawItem->rcItem.left + 2, lpDrawItem->rcItem.top + 2, pData->hIcon);
-
-            if (lpDrawItem->itemState & ODS_FOCUS)
-                DrawFocusRect(lpDrawItem->hDC, &lpDrawItem->rcItem);
-        }
-    }
-
-    void OnDeleteItem(const DELETEITEMSTRUCT* lpDeleteItem)
-    {
-        if (lpDeleteItem->hwndItem == *this)
-        {
-            ItemData* pData = reinterpret_cast<ItemData*>(lpDeleteItem->itemData);
-            delete pData;
-        }
-    }
-
-public:
-    LRESULT HandleMessage(const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
-    {
-        LRESULT ret = 0;
-        switch (uMsg)
-        {
-            HANDLE_MSG(WM_MEASUREITEM, OnMeasureItem);
-            HANDLE_MSG(WM_DRAWITEM, OnDrawItem);
-            HANDLE_MSG(WM_DELETEITEM, OnDeleteItem);
-        }
-
-        return ret;
-    }
-
-private:
-    int m_nID{ 0 };
-};
 
 class RootWindow : public Window
 {
@@ -732,7 +334,7 @@ int RootWindow::OnVkeyToItem(UINT vk, HWND hWndListbox, int iCaret)
         {
             ShowWindow(*this, SW_HIDE);
 
-            std::vector<HMONITOR> ms = GetMonitors();
+            const std::vector<HMONITOR> ms = GetMonitors();
             const auto itOrig = std::find(ms.begin(), ms.end(), m_hMonitor);
             if (itOrig == ms.end())
                 SendMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) GetPrimaryMonitor(ms));
@@ -752,7 +354,7 @@ int RootWindow::OnVkeyToItem(UINT vk, HWND hWndListbox, int iCaret)
         {
             ShowWindow(*this, SW_HIDE);
 
-            std::vector<HMONITOR> ms = GetMonitors();
+            const std::vector<HMONITOR> ms = GetMonitors();
             const auto itOrig = std::find(ms.begin(), ms.end(), m_hMonitor);
             if (itOrig == ms.end())
                 SendMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) GetPrimaryMonitor(ms));
@@ -840,7 +442,7 @@ LRESULT RootWindow::HandleMessage(const UINT uMsg, const WPARAM wParam, const LP
     }
 
     if (!IsHandled())
-        ret = m_hWndChild.HandleMessage(uMsg, wParam, lParam);
+        ret = m_hWndChild.HandleChainMessage(uMsg, wParam, lParam);
     if (!IsHandled())
         ret = Window::HandleMessage(uMsg, wParam, lParam);
 

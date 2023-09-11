@@ -60,11 +60,14 @@
   <ItemGroup>
     <ClCompile Include="RadSwitch.cpp" />
     <ClCompile Include="Window.cpp" />
+    <ClCompile Include="WindowsPlus.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ListBoxPlus.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Window.h" />
+    <ClInclude Include="WindowsPlus.h" />
     <ClInclude Include="Windowxx.h" />
   </ItemGroup>
   <ItemGroup>

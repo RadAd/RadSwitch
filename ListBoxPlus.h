@@ -161,7 +161,7 @@ private:
 
             rc.right = rc.left;
             rc.left = lpDrawItem->rcItem.left + GetSystemMetrics(SM_CXICON) + 4;
-            DrawText(lpDrawItem->hDC, pData->strRight, lstrlen(pData->strRight), &rc, DT_VCENTER | DT_LEFT | DT_END_ELLIPSIS | DT_SINGLELINE | DT_NOPREFIX);
+            DrawText(lpDrawItem->hDC, text, cch, &rc, DT_VCENTER | DT_LEFT | DT_END_ELLIPSIS | DT_SINGLELINE | DT_NOPREFIX);
 
             SetTextColor(lpDrawItem->hDC, clrForeground);
             SetBkColor(lpDrawItem->hDC, clrBackground);

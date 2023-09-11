@@ -12,6 +12,7 @@ struct Theme
     COLORREF clrHighlightText = GetSysColor(COLOR_HIGHLIGHTTEXT);
     COLORREF clrGrayText = GetSysColor(COLOR_GRAYTEXT);
     HBRUSH   brWindow = NULL;
+    HBRUSH   brHighlight = NULL;
 };
 
 extern Theme g_Theme;
@@ -149,23 +150,18 @@ private:
             const COLORREF clrBackground = SetBkColor(lpDrawItem->hDC,
                 lpDrawItem->itemState & ODS_SELECTED ? g_Theme.clrHighlight : g_Theme.clrWindow);
 
-            TEXTMETRIC tm;
-            GetTextMetrics(lpDrawItem->hDC, &tm);
-            const int y = (lpDrawItem->rcItem.bottom + lpDrawItem->rcItem.top - tm.tmHeight) / 2;
-            const int x = GetSystemMetrics(SM_CXICON) + 4;
-
             TCHAR text[1024];
             const int cch = GetText(lpDrawItem->itemID, text);
 
-            const UINT align = SetTextAlign(lpDrawItem->hDC, TA_RIGHT);
-            ExtTextOut(lpDrawItem->hDC, lpDrawItem->rcItem.right - 2, y,
-                ETO_CLIPPED | ETO_OPAQUE, &lpDrawItem->rcItem,
-                pData->strRight, lstrlen(pData->strRight), NULL);
-            SetTextAlign(lpDrawItem->hDC, align);
+            FillRect(lpDrawItem->hDC, &lpDrawItem->rcItem, lpDrawItem->itemState & ODS_SELECTED ? g_Theme.brHighlight : g_Theme.brWindow);
 
-            ExtTextOut(lpDrawItem->hDC, x, y,
-                ETO_CLIPPED, &lpDrawItem->rcItem,
-                text, (UINT) cch, NULL);
+            RECT rc = lpDrawItem->rcItem;
+            rc.left = lpDrawItem->rcItem.right - Width(lpDrawItem->rcItem) / 4;
+            DrawText(lpDrawItem->hDC, pData->strRight, lstrlen(pData->strRight), &rc, DT_VCENTER | DT_RIGHT | DT_END_ELLIPSIS | DT_SINGLELINE | DT_NOPREFIX);
+
+            rc.right = rc.left;
+            rc.left = lpDrawItem->rcItem.left + GetSystemMetrics(SM_CXICON) + 4;
+            DrawText(lpDrawItem->hDC, pData->strRight, lstrlen(pData->strRight), &rc, DT_VCENTER | DT_LEFT | DT_END_ELLIPSIS | DT_SINGLELINE | DT_NOPREFIX);
 
             SetTextColor(lpDrawItem->hDC, clrForeground);
             SetBkColor(lpDrawItem->hDC, clrBackground);

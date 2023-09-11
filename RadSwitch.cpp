@@ -566,6 +566,7 @@ bool Run(_In_ const LPCTSTR lpCmdLine, _In_ const int nShowCmd)
     }
 
     g_Theme.brWindow = CreateSolidBrush(g_Theme.clrWindow);
+    g_Theme.brHighlight = CreateSolidBrush(g_Theme.clrHighlight);
 
     if (RootWindow::Register() == 0)
     {

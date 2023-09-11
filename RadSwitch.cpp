@@ -748,13 +748,45 @@ int RootWindow::OnVkeyToItem(UINT vk, HWND hWndListbox, int iCaret)
             Switch(iCaret);
             return -2;
         case VK_LEFT:
+        {
             ShowWindow(*this, SW_HIDE);
-            PostMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) GetPrevMonitor(m_hMonitor));
+
+            std::vector<HMONITOR> ms = GetMonitors();
+            const auto itOrig = std::find(ms.begin(), ms.end(), m_hMonitor);
+            if (itOrig == ms.end())
+                SendMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) GetPrimaryMonitor(ms));
+            else
+            {
+                auto it = itOrig;
+                do
+                {
+                    it = it == ms.begin() ? ms.end() - 1 : std::prev(it);
+                    if (SendMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) GetPrimaryMonitor(ms)))
+                        break;
+                } while (it != itOrig);
+            }
             return -2;
+        }
         case VK_RIGHT:
+        {
             ShowWindow(*this, SW_HIDE);
-            PostMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) GetNextMonitor(m_hMonitor));
+
+            std::vector<HMONITOR> ms = GetMonitors();
+            const auto itOrig = std::find(ms.begin(), ms.end(), m_hMonitor);
+            if (itOrig == ms.end())
+                SendMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) GetPrimaryMonitor(ms));
+            else
+            {
+                auto it = itOrig;
+                do
+                {
+                    it = it == (ms.end() - 1) ? ms.begin() : std::next(it);
+                    if (SendMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) GetPrimaryMonitor(ms)))
+                        break;
+                } while (it != itOrig);
+            }
             return -2;
+        }
         default:
             return -1;
         }
@@ -792,6 +824,7 @@ LRESULT RootWindow::HandleMessage(const UINT uMsg, const WPARAM wParam, const LP
         HANDLE_MSG(WM_ACTIVATE, OnActivate);
     case WM_START:
     {
+        SetHandled(TRUE);
         const HWND hActiveWnd = GetAncestor(GetForegroundWindow(), GA_ROOTOWNER);
         m_FilterToActive = (BOOL) wParam;
         m_hMonitor = (HMONITOR) lParam;

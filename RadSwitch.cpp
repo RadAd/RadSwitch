@@ -344,7 +344,7 @@ int RootWindow::OnVkeyToItem(UINT vk, HWND hWndListbox, int iCaret)
                 do
                 {
                     it = it == ms.begin() ? ms.end() - 1 : std::prev(it);
-                    if (SendMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) GetPrimaryMonitor(ms)))
+                    if (SendMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) *it))
                         break;
                 } while (it != itOrig);
             }
@@ -364,7 +364,7 @@ int RootWindow::OnVkeyToItem(UINT vk, HWND hWndListbox, int iCaret)
                 do
                 {
                     it = it == (ms.end() - 1) ? ms.begin() : std::next(it);
-                    if (SendMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) GetPrimaryMonitor(ms)))
+                    if (SendMessage(g_hWnd, WM_START, m_FilterToActive, (LPARAM) *it))
                         break;
                 } while (it != itOrig);
             }

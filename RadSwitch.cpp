@@ -87,25 +87,6 @@ inline LONG Height(RECT r)
     return r.bottom - r.top;
 }
 
-// https://devblogs.microsoft.com/oldnewthing/20071008-00/?p=24863
-BOOL IsAltTabWindow(HWND hwnd)
-{
-    if (GetWindow(hwnd, GW_OWNER) != NULL)
-        return FALSE;
-
-    // Start at the root owner
-    HWND hwndWalk = GetAncestor(hwnd, GA_ROOTOWNER);
-    // See if we are the last active visible popup
-    HWND hwndTry;
-    while ((hwndTry = GetLastActivePopup(hwndWalk)) != hwndWalk)
-    {
-        hwndWalk = hwndTry;
-        if (IsWindowVisible(hwndTry))
-            break;
-    }
-    return hwndWalk == hwnd;
-}
-
 void ShowLastError(LPCTSTR msg, LPCTSTR function)
 {
     TCHAR fullmsg[1024];
@@ -895,7 +876,11 @@ void RootWindow::FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonito
 
             const DWORD dwStyle = GetWindowStyle(hWnd);
             const DWORD dwExStyle = GetWindowExStyle(hWnd);
-            if (IsWindowVisible(hWnd) && (CloakedVal == 0) && NoneSet(dwExStyle, WS_EX_TOOLWINDOW) && IsAltTabWindow(hWnd) && (hMonitor == NULL || MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY) == hMonitor))
+            if (IsWindowVisible(hWnd)
+                && (CloakedVal == 0)
+                && NoneSet(dwExStyle, WS_EX_TOOLWINDOW)
+                && (GetWindow(hWnd, GW_OWNER) == NULL)
+                && (hMonitor == NULL || MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY) == hMonitor))
             {
                 TCHAR strExe[MAX_PATH] = TEXT("");
                 QueryFullProcessImageNameFromHwnd(hWnd, strExe, ARRAYSIZE(strExe));

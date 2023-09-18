@@ -19,7 +19,9 @@
     <ClCompile Include="Rad\WinError.cpp">
       <Filter>Rad</Filter>
     </ClCompile>
-    <ClCompile Include="AboutDlg.cpp" />
+    <ClCompile Include="Rad\AboutDlg.cpp">
+      <Filter>Rad</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ListBoxPlus.h" />
@@ -52,7 +54,9 @@
     <ClInclude Include="Rad\WinError.h">
       <Filter>Rad</Filter>
     </ClInclude>
-    <ClInclude Include="AboutDlg.h" />
+    <ClInclude Include="Rad\AboutDlg.h">
+      <Filter>Rad</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="RadSwitch.rc" />

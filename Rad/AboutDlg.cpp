@@ -1,10 +1,10 @@
 #include "AboutDlg.h"
-#include "Rad/Windowxx.h"
+#include "Windowxx.h"
 
 #include <stdlib.h>
 #include <Shellapi.h>
 
-#include "resource.h"
+#include "../resource.h"
 
 extern HINSTANCE g_hInstance;
 

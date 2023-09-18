@@ -11,7 +11,7 @@
 
 #include "WindowsPlus.h"
 #include "ListBoxPlus.h"
-#include "AboutDlg.h"
+#include "Rad/AboutDlg.h"
 
 #include "resource.h"
 

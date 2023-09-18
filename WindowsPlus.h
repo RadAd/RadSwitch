@@ -15,39 +15,7 @@ inline bool NoneSet(DWORD v, DWORD set)
     return (v & set) == 0;
 }
 
-inline UINT MySendKey(WORD wVk, bool bUp)
-{
-    INPUT i = {};
-    i.type = INPUT_KEYBOARD;
-    i.ki.wVk = wVk;
-    if (bUp)
-        i.ki.dwFlags |= KEYEVENTF_KEYUP;
-    return SendInput(1, &i, sizeof(i));
-}
-
-inline void SendHotKey(_In_ UINT fsModifiers, _In_ UINT vk)
-{
-    const bool bAltDown = GetKeyState(VK_MENU) < 0;
-    const bool bAltCtrl = GetKeyState(VK_CONTROL) < 0;
-    const bool bAltShift = GetKeyState(VK_SHIFT) < 0;
-
-    if (!bAltDown && AllSet(fsModifiers, MOD_ALT))
-        MySendKey(VK_MENU, false);
-    if (!bAltCtrl && AllSet(fsModifiers, MOD_CONTROL))
-        MySendKey(VK_CONTROL, false);
-    if (!bAltShift && AllSet(fsModifiers, MOD_SHIFT))
-        MySendKey(VK_SHIFT, false);
-
-    MySendKey(vk, false);
-    MySendKey(vk, true);
-
-    if (!bAltShift && AllSet(fsModifiers, MOD_SHIFT))
-        MySendKey(VK_SHIFT, true);
-    if (!bAltCtrl && AllSet(fsModifiers, MOD_CONTROL))
-        MySendKey(VK_CONTROL, true);
-    if (!bAltDown && AllSet(fsModifiers, MOD_ALT))
-        MySendKey(VK_MENU, true);
-}
+void SendHotKey(_In_ UINT fsModifiers, _In_ UINT vk);
 
 inline DWORD MySendMessageTimeout(
     _In_ HWND hWnd,

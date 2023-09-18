@@ -1,5 +1,5 @@
 #pragma once
-#include "Rad/Dialog.h"
+#include "Dialog.h"
 
 class AboutDlg : public Dialog
 {

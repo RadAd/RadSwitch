@@ -58,7 +58,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AboutDlg.cpp" />
+    <ClCompile Include="Rad\AboutDlg.cpp" />
     <ClCompile Include="RadSwitch.cpp" />
     <ClCompile Include="Rad\Dialog.cpp" />
     <ClCompile Include="Rad\Log.cpp" />
@@ -69,7 +69,7 @@
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AboutDlg.h" />
+    <ClInclude Include="Rad\AboutDlg.h" />
     <ClInclude Include="ListBoxPlus.h" />
     <ClInclude Include="Rad\Dialog.h" />
     <ClInclude Include="Rad\Format.h" />

@@ -1,14 +1,16 @@
 #include "Window.h"
-#include <cassert>
 #include <algorithm>
 
 extern HINSTANCE g_hInstance;
 
-struct CreateWndParams
+namespace
 {
-    LPVOID lpCreateParams;
-    Window* wnd;
-};
+    struct CreateWndParams
+    {
+        LPVOID lpCreateParams;
+        Window* wnd;
+    };
+}
 
 HWND CreateWnd(const CREATESTRUCT& cs, const Window* wnd)
 {
@@ -36,15 +38,9 @@ void Window::GetWndClass(WNDCLASS& wc)
 
 LRESULT Window::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    Message m = { uMsg, wParam, lParam, false };
-    Message* pMsg = &m;
-    std::swap(pMsg, m_msg);
-
-    const LRESULT ret = HandleMessage(uMsg, wParam, lParam);
-
-    assert(IsHandled());
-    assert(m_msg == &m);
-    std::swap(pMsg, m_msg);
+    bool bHandled = false;
+    const LRESULT ret = MessageHandler::ProcessMessage(uMsg, wParam, lParam, bHandled);
+    _ASSERTE(bHandled);
 
     return ret;
 }
@@ -57,7 +53,7 @@ LRESULT CALLBACK Window::s_WndProc(const HWND hWnd, const UINT uMsg, const WPARA
         LPCREATESTRUCT lpcs = reinterpret_cast<LPCREATESTRUCT>(lParam);
         CreateWndParams* cwp = reinterpret_cast<CreateWndParams*>(lpcs->lpCreateParams);
         self = cwp->wnd;
-        self->m_hWnd = hWnd;
+        self->Set(hWnd);
         lpcs->lpCreateParams = cwp->lpCreateParams;
         SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(self));
     }
@@ -68,20 +64,15 @@ LRESULT CALLBACK Window::s_WndProc(const HWND hWnd, const UINT uMsg, const WPARA
         lpcs->lpCreateParams = cwp->lpCreateParams;
     }
 
-    LRESULT ret = self != nullptr
+    const LRESULT ret = self != nullptr
         ? self->ProcessMessage(uMsg, wParam, lParam)
         : DefWindowProc(hWnd, uMsg, wParam, lParam);
 
     if (uMsg == WM_NCDESTROY)
     {
-        assert(self != nullptr);
+        _ASSERTE(self != nullptr);
         SetWindowLongPtr(hWnd, GWLP_USERDATA, 0);
-    }
-
-    if (self != nullptr && GetWindowLongPtr(hWnd, GWLP_USERDATA) == 0 && self->m_msg == nullptr)
-    {
-        self->m_hWnd = NULL;
-        delete self;
+        self->Delete();
     }
 
     return ret;
@@ -99,22 +90,22 @@ LRESULT Window::HandleMessage(const UINT uMsg, const WPARAM wParam, const LPARAM
         OnPrintClient(reinterpret_cast<HDC>(wParam));
         return 0;
     default:
-        return DefWindowProc(m_hWnd, uMsg, wParam, lParam);
+        return DefWindowProc(*this, uMsg, wParam, lParam);
     }
 }
 
 void Window::OnPaint()
 {
     PAINTSTRUCT ps;
-    BeginPaint(m_hWnd, &ps);
+    BeginPaint(*this, &ps);
     OnDraw(&ps);
-    EndPaint(m_hWnd, &ps);
+    EndPaint(*this, &ps);
 }
 
 void Window::OnPrintClient(const HDC hdc)
 {
     PAINTSTRUCT ps = {};
     ps.hdc = hdc;
-    GetClientRect(m_hWnd, &ps.rcPaint);
+    GetClientRect(*this, &ps.rcPaint);
     OnDraw(&ps);
 }

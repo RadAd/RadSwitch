@@ -1,9 +1,6 @@
 #pragma once
 
-#define STRICT
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
+#include "MessageHandler.h"
 
 HWND CreateWnd(const CREATESTRUCT& cs, const class Window* wnd);
 
@@ -51,39 +48,19 @@ public:
     }
 };
 
-class Window
+class Window : public MessageHandler
 {
-public:
-    HWND GetHWND() const { return m_hWnd; }
-    operator HWND() const { return m_hWnd; }
-
 protected:
     static void GetCreateWindow(CREATESTRUCT& cs);
     static void GetWndClass(WNDCLASS& wc);
 
-    virtual ~Window() = default;
-    virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
+    virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
     virtual void OnDraw(const PAINTSTRUCT* pps) const { }
-
-    void SetHandled(bool bHandled) { m_msg->m_bHandled = bHandled; }
-    bool IsHandled() const { return m_msg->m_bHandled; }
 
 private:
     void OnPaint();
     void OnPrintClient(HDC hdc);
 
-    struct Message
-    {
-        UINT        m_message;
-        WPARAM      m_wParam;
-        LPARAM      m_lParam;
-        bool        m_bHandled;
-    };
-
-    Message* m_msg = nullptr;
-
     LRESULT ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK s_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
-    HWND m_hWnd = NULL;
 };

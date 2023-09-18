@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="RadSwitch.cpp" />
+    <ClCompile Include="WindowsPlus.cpp" />
+    <ClCompile Include="WinMain.cpp" />
+    <ClCompile Include="Rad\Dialog.cpp">
+      <Filter>Rad</Filter>
+    </ClCompile>
+    <ClCompile Include="Rad\Log.cpp">
+      <Filter>Rad</Filter>
+    </ClCompile>
+    <ClCompile Include="Rad\MessageHandler.cpp">
+      <Filter>Rad</Filter>
+    </ClCompile>
+    <ClCompile Include="Rad\Window.cpp">
+      <Filter>Rad</Filter>
+    </ClCompile>
+    <ClCompile Include="Rad\WinError.cpp">
+      <Filter>Rad</Filter>
+    </ClCompile>
+    <ClCompile Include="AboutDlg.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ListBoxPlus.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="WindowsPlus.h" />
+    <ClInclude Include="Rad\Dialog.h">
+      <Filter>Rad</Filter>
+    </ClInclude>
+    <ClInclude Include="Rad\Format.h">
+      <Filter>Rad</Filter>
+    </ClInclude>
+    <ClInclude Include="Rad\Log.h">
+      <Filter>Rad</Filter>
+    </ClInclude>
+    <ClInclude Include="Rad\MemoryPlus.h">
+      <Filter>Rad</Filter>
+    </ClInclude>
+    <ClInclude Include="Rad\MessageHandler.h">
+      <Filter>Rad</Filter>
+    </ClInclude>
+    <ClInclude Include="Rad\SourceLocation.h">
+      <Filter>Rad</Filter>
+    </ClInclude>
+    <ClInclude Include="Rad\Window.h">
+      <Filter>Rad</Filter>
+    </ClInclude>
+    <ClInclude Include="Rad\Windowxx.h">
+      <Filter>Rad</Filter>
+    </ClInclude>
+    <ClInclude Include="Rad\WinError.h">
+      <Filter>Rad</Filter>
+    </ClInclude>
+    <ClInclude Include="AboutDlg.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="RadSwitch.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\RadSwitch.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Rad">
+      <UniqueIdentifier>{de24a1c5-636f-43f1-9caf-0e68e9fc3e5a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

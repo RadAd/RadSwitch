@@ -3,7 +3,7 @@
 #include <windowsx.h>
 
 #undef HANDLE_MSG
-#define HANDLE_MSG(message, fn)        case (message): ret = HANDLEX_##message((wParam), (lParam), (fn)); break
+#define HANDLE_MSG(message, fn)        case (message): SetHandled(true); ret = HANDLEX_##message((wParam), (lParam), (fn)); break
 
 /* void Cls::OnCompacting(UINT compactRatio) */
 #define HANDLEX_WM_COMPACTING(wParam, lParam, fn) \
@@ -21,11 +21,11 @@
 #define HANDLEX_WM_QUERYNEWPALETTE(wParam, lParam, fn) \
     MAKELRESULT((BOOL)(fn)(), 0L)
 
-/* void Cls::OnPaletteIsChanging(HWND hwndPaletteChange) */
+/* void Cls::OnPaletteIsChanging(HWND hWndPaletteChange) */
 #define HANDLEX_WM_PALETTEISCHANGING(wParam, lParam, fn) \
     ((fn)((HWND)(wParam)), 0L)
 
-/* void Cls::OnPaletteChanged(HWND hwndPaletteChange) */
+/* void Cls::OnPaletteChanged(HWND hWndPaletteChange) */
 #define HANDLEX_WM_PALETTECHANGED(wParam, lParam, fn) \
     ((fn)((HWND)(wParam)), 0L)
 
@@ -167,7 +167,7 @@
     ((fn)((HDROP)(wParam)), 0L)
 #endif  /* _INC_SHELLAPI */
 
-/* void Cls::OnActivate(UINT state, HWND hwndActDeact, BOOL fMinimized) */
+/* void Cls::OnActivate(UINT state, HWND hWndActDeact, BOOL fMinimized) */
 #define HANDLEX_WM_ACTIVATE(wParam, lParam, fn) \
     ((fn)((UINT)LOWORD(wParam), (HWND)(lParam), (BOOL)HIWORD(wParam)), 0L)
 
@@ -175,15 +175,15 @@
 #define HANDLEX_WM_ACTIVATEAPP(wParam, lParam, fn) \
     ((fn)((BOOL)(wParam), (DWORD)(lParam)), 0L)
 
-/* BOOL Cls::OnNCActivate(BOOL fActive, HWND hwndActDeact, BOOL fMinimized) */
+/* BOOL Cls::OnNCActivate(BOOL fActive, HWND hWndActDeact, BOOL fMinimized) */
 #define HANDLEX_WM_NCACTIVATE(wParam, lParam, fn) \
     (LRESULT)(DWORD)(BOOL)(fn)((BOOL)(wParam), 0L, 0L)
 
-/* void Cls::OnSetFocus(HWND hwndOldFocus) */
+/* void Cls::OnSetFocus(HWND hWndOldFocus) */
 #define HANDLEX_WM_SETFOCUS(wParam, lParam, fn) \
     ((fn)((HWND)(wParam)), 0L)
 
-/* void Cls::OnKillFocus(HWND hwndNewFocus) */
+/* void Cls::OnKillFocus(HWND hWndNewFocus) */
 #define HANDLEX_WM_KILLFOCUS(wParam, lParam, fn) \
     ((fn)((HWND)(wParam)), 0L)
 
@@ -303,7 +303,7 @@
 #define HANDLEX_WM_NCMBUTTONUP(wParam, lParam, fn) \
     ((fn)((int)(short)LOWORD(lParam), (int)(short)HIWORD(lParam), (UINT)(wParam)), 0L)
 
-/* int Cls::OnMouseActivate(HWND hwndTopLevel, UINT codeHitTest, UINT msg) */
+/* int Cls::OnMouseActivate(HWND hWndTopLevel, UINT codeHitTest, UINT msg) */
 #define HANDLEX_WM_MOUSEACTIVATE(wParam, lParam, fn) \
     (LRESULT)(DWORD)(int)(fn)((HWND)(wParam), (UINT)LOWORD(lParam), (UINT)HIWORD(lParam))
 
@@ -334,15 +334,19 @@
 #define HANDLEX_WM_MENUCHAR(wParam, lParam, fn) \
     (LRESULT)(DWORD)(fn)((UINT)(LOWORD(wParam)), (UINT)HIWORD(wParam), (HMENU)(lParam))
 
-/* void Cls::OnCommand(int id, HWND hwndCtl, UINT codeNotify) */
+/* void Cls::OnCommand(int id, HWND hWndCtl, UINT codeNotify) */
 #define HANDLEX_WM_COMMAND(wParam, lParam, fn) \
     ((fn)((int)(LOWORD(wParam)), (HWND)(lParam), (UINT)HIWORD(wParam)), 0L)
 
-/* void Cls::OnHScroll(HWND hwndCtl, UINT code, int pos) */
+/* LRESULT Cls::OnNotify(DWORD dwID, LPNMHDR pNmHdr) */
+#define HANDLEX_WM_NOTIFY(wParam, lParam, fn) \
+    (fn)((DWORD) wParam, (LPNMHDR) lParam)
+
+/* void Cls::OnHScroll(HWND hWndCtl, UINT code, int pos) */
 #define HANDLEX_WM_HSCROLL(wParam, lParam, fn) \
     ((fn)((HWND)(lParam), (UINT)(LOWORD(wParam)), (int)(short)HIWORD(wParam)), 0L)
 
-/* void Cls::OnVScroll(HWND hwndCtl, UINT code, int pos) */
+/* void Cls::OnVScroll(HWND hWndCtl, UINT code, int pos) */
 #define HANDLEX_WM_VSCROLL(wParam, lParam, fn) \
     ((fn)((HWND)(lParam), (UINT)(LOWORD(wParam)),  (int)(short)HIWORD(wParam)), 0L)
 
@@ -374,6 +378,10 @@
 #define HANDLEX_WM_RENDERALLFORMATS(wParam, lParam, fn) \
     ((fn)(), 0L)
 
+/* void Cls::OnClipboardUpdate() */
+#define HANDLEX_WM_CLIPBOARDUPDATE(wParam, lParam, fn) \
+    ((fn)(), 0L)
+
 /* void Cls::OnDestroyClipboard() */
 #define HANDLEX_WM_DESTROYCLIPBOARD(wParam, lParam, fn) \
     ((fn)(), 0L)
@@ -382,19 +390,19 @@
 #define HANDLEX_WM_DRAWCLIPBOARD(wParam, lParam, fn) \
     ((fn)(), 0L)
 
-/* void Cls::OnPaintClipboard(HWND hwndCBViewer, const LPPAINTSTRUCT lpPaintStruct) */
+/* void Cls::OnPaintClipboard(HWND hWndCBViewer, const LPPAINTSTRUCT lpPaintStruct) */
 #define HANDLEX_WM_PAINTCLIPBOARD(wParam, lParam, fn) \
     ((fn)((HWND)(wParam), (const LPPAINTSTRUCT)GlobalLock((HGLOBAL)(lParam))), GlobalUnlock((HGLOBAL)(lParam)), 0L)
 
-/* void Cls::OnSizeClipboard(HWND hwndCBViewer, const LPRECT lprc) */
+/* void Cls::OnSizeClipboard(HWND hWndCBViewer, const LPRECT lprc) */
 #define HANDLEX_WM_SIZECLIPBOARD(wParam, lParam, fn) \
     ((fn)((HWND)(wParam), (const LPRECT)GlobalLock((HGLOBAL)(lParam))), GlobalUnlock((HGLOBAL)(lParam)), 0L)
 
-/* void Cls::OnVScrollClipboard(HWND hwndCBViewer, UINT code, int pos) */
+/* void Cls::OnVScrollClipboard(HWND hWndCBViewer, UINT code, int pos) */
 #define HANDLEX_WM_VSCROLLCLIPBOARD(wParam, lParam, fn) \
     ((fn)((HWND)(wParam), (UINT)LOWORD(lParam), (int)(short)HIWORD(lParam)), 0L)
 
-/* void Cls::OnHScrollClipboard(HWND hwndCBViewer, UINT code, int pos) */
+/* void Cls::OnHScrollClipboard(HWND hWndCBViewer, UINT code, int pos) */
 #define HANDLEX_WM_HSCROLLCLIPBOARD(wParam, lParam, fn) \
     ((fn)((HWND)(wParam), (UINT)LOWORD(lParam), (int)(short)HIWORD(lParam)), 0L)
 
@@ -402,11 +410,11 @@
 #define HANDLEX_WM_ASKCBFORMATNAME(wParam, lParam, fn) \
     ((fn)((int)(wParam), (LPTSTR)(lParam)), 0L)
 
-/* void Cls::OnChangeCBChain(HWND hwndRemove, HWND hwndNext) */
+/* void Cls::OnChangeCBChain(HWND hWndRemove, HWND hWndNext) */
 #define HANDLEX_WM_CHANGECBCHAIN(wParam, lParam, fn) \
     ((fn)((HWND)(wParam), (HWND)(lParam)), 0L)
 
-/* BOOL Cls::OnSetCursor(HWND hwndCursor, UINT codeHitTest, UINT msg) */
+/* BOOL Cls::OnSetCursor(HWND hWndCursor, UINT codeHitTest, UINT msg) */
 #define HANDLEX_WM_SETCURSOR(wParam, lParam, fn) \
     (LRESULT)(DWORD)(BOOL)(fn)((HWND)(wParam), (UINT)LOWORD(lParam), (UINT)HIWORD(lParam))
 
@@ -418,24 +426,24 @@
 #define HANDLEX_WM_MDICREATE(wParam, lParam, fn) \
     (LRESULT)(DWORD)(UINT)(fn)((LPMDICREATESTRUCT)(lParam))
 
-/* void Cls::MDIDestroy(HWND hwndDestroy) */
+/* void Cls::MDIDestroy(HWND hWndDestroy) */
 #define HANDLEX_WM_MDIDESTROY(wParam, lParam, fn) \
     ((fn)((HWND)(wParam)), 0L)
 
 /* NOTE: Usable only by MDI client windows */
-/* void Cls::MDIActivate(BOOL fActive, HWND hwndActivate, HWND hwndDeactivate) */
+/* void Cls::MDIActivate(BOOL fActive, HWND hWndActivate, HWND hWndDeactivate) */
 #define HANDLEX_WM_MDIACTIVATE(wParam, lParam, fn) \
-    ((fn)((BOOL)(lParam == (LPARAM)hwnd), (HWND)(lParam), (HWND)(wParam)), 0L)
+    ((fn)((BOOL)(lParam == (LPARAM)hWnd), (HWND)(lParam), (HWND)(wParam)), 0L)
 
-/* void Cls::MDIRestore(HWND hwndRestore) */
+/* void Cls::MDIRestore(HWND hWndRestore) */
 #define HANDLEX_WM_MDIRESTORE(wParam, lParam, fn) \
     ((fn)((HWND)(wParam)), 0L)
 
-/* HWND Cls::MDINext(HWND hwndCur, BOOL fPrev) */
+/* HWND Cls::MDINext(HWND hWndCur, BOOL fPrev) */
 #define HANDLEX_WM_MDINEXT(wParam, lParam, fn) \
     (LRESULT)(HWND)(fn)((HWND)(wParam), (BOOL)lParam)
 
-/* void Cls::MDIMaximize(HWND hwndMaximize) */
+/* void Cls::MDIMaximize(HWND hWndMaximize) */
 #define HANDLEX_WM_MDIMAXIMIZE(wParam, lParam, fn) \
     ((fn)((HWND)(wParam)), 0L)
 
@@ -463,19 +471,19 @@
 #define HANDLEX_WM_CHILDACTIVATE(wParam, lParam, fn) \
     ((fn)(), 0L)
 
-/* BOOL Cls::OnInitDialog(HWND hwndFocus, LPARAM lParam) */
+/* BOOL Cls::OnInitDialog(HWND hWndFocus, LPARAM lParam) */
 #define HANDLEX_WM_INITDIALOG(wParam, lParam, fn) \
     (LRESULT)(DWORD)(UINT)(BOOL)(fn)((HWND)(wParam), lParam)
 
-/* HWND Cls::OnNextDlgCtl(HWND hwndSetFocus, BOOL fNext) */
+/* HWND Cls::OnNextDlgCtl(HWND hWndSetFocus, BOOL fNext) */
 #define HANDLEX_WM_NEXTDLGCTL(wParam, lParam, fn) \
     (LRESULT)(UINT_PTR)(HWND)(fn)((HWND)(wParam), (BOOL)(lParam))
 
-/* void Cls::OnParentNotify(UINT msg, HWND hwndChild, int idChild) */
+/* void Cls::OnParentNotify(UINT msg, HWND hWndChild, int idChild) */
 #define HANDLEX_WM_PARENTNOTIFY(wParam, lParam, fn) \
     ((fn)((UINT)LOWORD(wParam), (HWND)(lParam), (UINT)HIWORD(wParam)), 0L)
 
-/* void Cls::OnEnterIdle(UINT source, HWND hwndSource) */
+/* void Cls::OnEnterIdle(UINT source, HWND hWndSource) */
 #define HANDLEX_WM_ENTERIDLE(wParam, lParam, fn) \
     ((fn)((UINT)(wParam), (HWND)(lParam)), 0L)
 
@@ -483,7 +491,7 @@
 #define HANDLEX_WM_GETDLGCODE(wParam, lParam, fn) \
     (LRESULT)(DWORD)(UINT)(fn)((LPMSG)(lParam))
 
-/* HBRUSH Cls::OnCtlColor(HDC hdc, HWND hwndChild, int type) */
+/* HBRUSH Cls::OnCtlColor(HDC hdc, HWND hWndChild, int type) */
 #define HANDLEX_WM_CTLCOLORMSGBOX(wParam, lParam, fn) \
     (LRESULT)(UINT_PTR)(HBRUSH)(fn)((HDC)(wParam), (HWND)(lParam), CTLCOLOR_MSGBOX)
 
@@ -505,7 +513,7 @@
 #define HANDLEX_WM_CTLCOLORSTATIC(wParam, lParam, fn) \
     (LRESULT)(UINT_PTR)(HBRUSH)(fn)((HDC)(wParam), (HWND)(lParam), CTLCOLOR_STATIC)
 
-/* void Cls::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) */
+/* void Cls::OnSetFont(HWND hWndCtl, HFONT hfont, BOOL fRedraw) */
 #define HANDLEX_WM_SETFONT(wParam, lParam, fn) \
     ((fn)((HFONT)(wParam), (BOOL)(lParam)), 0L)
 
@@ -529,17 +537,18 @@
 #define HANDLEX_WM_COMPAREITEM(wParam, lParam, fn) \
     (LRESULT)(DWORD)(int)(fn)((const COMPAREITEMSTRUCT *)(lParam))
 
-/* int Cls::OnVkeyToItem(UINT vk, HWND hwndListbox, int iCaret) */
+/* int Cls::OnVkeyToItem(UINT vk, HWND hWndListbox, int iCaret) */
 #define HANDLEX_WM_VKEYTOITEM(wParam, lParam, fn) \
     (LRESULT)(DWORD)(int)(fn)((UINT)LOWORD(wParam), (HWND)(lParam), (int)(short)HIWORD(wParam))
 
-/* int Cls::OnCharToItem(UINT ch, HWND hwndListbox, int iCaret) */
+/* int Cls::OnCharToItem(UINT ch, HWND hWndListbox, int iCaret) */
 #define HANDLEX_WM_CHARTOITEM(wParam, lParam, fn) \
     (LRESULT)(DWORD)(int)(fn)((UINT)LOWORD(wParam), (HWND)(lParam), (int)(short)HIWORD(wParam))
 
 /* void Cls::OnQueueSync() */
 #define HANDLEX_WM_QUEUESYNC(wParam, lParam, fn) \
     ((fn)(), 0L)
+
 #if (WINVER >= 0x030a)
 /* void Cls::OnCommNotify(int cid, UINT flags) */
 #define HANDLEX_WM_COMMNOTIFY(wParam, lParam, fn) \
@@ -554,7 +563,7 @@
 #define HANDLEX_WM_DEVICECHANGE(wParam, lParam, fn) \
     (LRESULT)(DWORD)(BOOL)(fn)((UINT)(wParam), (DWORD)(lParam))
 
-/* void Cls::OnContextMenu(HWND hwndContext, UINT xPos, UINT yPos) */
+/* void Cls::OnContextMenu(HWND hWndContext, UINT xPos, UINT yPos) */
 #define HANDLEX_WM_CONTEXTMENU(wParam, lParam, fn) \
     ((fn)((HWND)(wParam), (int)(short)LOWORD(lParam), (int)(short)HIWORD(lParam)), 0L)
 

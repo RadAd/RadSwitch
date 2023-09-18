@@ -1,8 +1,7 @@
-#include "Window.h"
-#include "Windowxx.h"
+#include "Rad/Window.h"
+#include "Rad/Windowxx.h"
 #include <CommCtrl.h>
 #include <Shlwapi.h>
-#include <Shellapi.h>
 #include <dwmapi.h>
 #include <appmodel.h>
 #include <algorithm>
@@ -12,10 +11,9 @@
 
 #include "WindowsPlus.h"
 #include "ListBoxPlus.h"
+#include "AboutDlg.h"
 
 #include "resource.h"
-
-extern HINSTANCE g_hInstance;
 
 Theme g_Theme;
 
@@ -226,76 +224,6 @@ RECT GetPosition(HMONITOR hMonitor)
     return r;
 }
 
-INT_PTR CALLBACK AboutDlg(const HWND hDlg, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
-{
-    switch (uMsg)
-    {
-    case WM_INITDIALOG:
-    {
-        SendMessage(GetDlgItem(hDlg, IDC_ABOUT_APPICON), STM_SETICON, (WPARAM) LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_MAIN)), 0);
-
-        TCHAR	FileName[1024];
-        GetModuleFileName(g_hInstance, FileName, 1024);
-
-        DWORD	Dummy;
-        DWORD	Size = GetFileVersionInfoSize(FileName, &Dummy);
-
-        if (Size > 0)
-        {
-            void* Info = malloc(Size);
-            if (Info != nullptr)
-            {
-                // VS_VERSION_INFO   VS_VERSIONINFO  VS_FIXEDFILEINFO
-
-                //Dummy = 0;
-                GetFileVersionInfo(FileName, Dummy, Size, Info);
-
-                TCHAR* String;
-                UINT	Length;
-                VerQueryValue(Info, TEXT("\\StringFileInfo\\0c0904b0\\FileVersion"), (LPVOID*) &String, &Length);
-                SetWindowText(GetDlgItem(hDlg, IDC_ABOUT_VERSION), String);
-                VerQueryValue(Info, TEXT("\\StringFileInfo\\0c0904b0\\ProductName"), (LPVOID*) &String, &Length);
-                SetWindowText(GetDlgItem(hDlg, IDC_ABOUT_PRODUCT), String);
-
-                free(Info);
-            }
-        }
-        else
-        {
-            SetWindowText(GetDlgItem(hDlg, IDC_ABOUT_VERSION), TEXT("Unknown"));
-        }
-
-        return TRUE;
-    }
-    case WM_COMMAND:
-    {
-        if (HIWORD(wParam) == BN_CLICKED)
-        {
-            switch (LOWORD(wParam))
-            {
-            case IDC_ABOUT_WEBSITE:
-            case IDC_ABOUT_MAIL:
-            {
-                TCHAR	Url[1024];
-                GetWindowText((HWND) lParam, Url, 1024);
-                ShellExecute(hDlg, TEXT("open"), Url, NULL, NULL, SW_SHOW);
-                return TRUE;
-            }
-            break;
-            case IDCANCEL:
-            case IDOK:
-            {
-                EndDialog(hDlg, TRUE);
-                return TRUE;
-            }
-            break;
-            }
-        }
-    }
-    }
-    return FALSE;
-}
-
 class RootWindow : public Window
 {
     friend WindowManager<RootWindow>;
@@ -444,7 +372,7 @@ int RootWindow::OnVkeyToItem(UINT vk, HWND hWndListbox, int iCaret)
             return -2;
         }
         case VK_F1:
-            DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_ABOUT), *this, AboutDlg);
+            AboutDlg::DoModal(*this);
             return -2;
         default:
             return -1;

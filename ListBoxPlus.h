@@ -182,9 +182,15 @@ private:
         }
     }
 
+private:
+    bool m_bHandled;
+
+    void SetHandled(bool bHandled) { m_bHandled = bHandled;  }
+
 public:
     LRESULT HandleChainMessage(const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
     {
+        m_bHandled = false;
         LRESULT ret = 0;
         switch (uMsg)
         {

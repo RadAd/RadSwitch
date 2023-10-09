@@ -2,6 +2,7 @@
 #include "Rad/Windowxx.h"
 #include <CommCtrl.h>
 #include <Shlwapi.h>
+#include <Shellapi.h>
 #include <dwmapi.h>
 #include <appmodel.h>
 #include <algorithm>
@@ -14,6 +15,8 @@
 #include "Rad/AboutDlg.h"
 
 #include "resource.h"
+
+extern HINSTANCE g_hInstance;
 
 Theme g_Theme;
 
@@ -488,14 +491,34 @@ void RootWindow::FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonito
                 && (GetWindow(hWnd, GW_OWNER) == NULL)
                 && (hMonitor == NULL || MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY) == hMonitor))
             {
+                HWND hActualWnd = hWnd;
+
+                TCHAR strClass[MAX_PATH] = TEXT("");
+                GetClassName(hWnd, strClass, ARRAYSIZE(strClass));
+                if (wcscmp(strClass, L"ApplicationFrameWindow") == 0)
+                {
+                    DWORD pid = 0;
+                    GetWindowThreadProcessId(hWnd, &pid);
+
+                    std::vector<HWND> wc = GetWindows(hWnd);
+                    for (const HWND hWndChild : wc)
+                    {
+                        DWORD pidchild = 0;
+                        GetWindowThreadProcessId(hWndChild, &pidchild);
+
+                        if (pidchild != pid)
+                            hActualWnd = hWndChild;
+                    }
+                }
+
                 TCHAR strExe[MAX_PATH] = TEXT("");
-                QueryFullProcessImageNameFromHwnd(hWnd, strExe, ARRAYSIZE(strExe));
+                QueryFullProcessImageNameFromHwnd(hActualWnd, strExe, ARRAYSIZE(strExe));
 
                 if (FilterToActive && lstrcmp(strActiveExe, strExe) != 0)
                     continue;
 
-                TCHAR title[1024];
-                GetWindowText(hWnd, title, ARRAYSIZE(title));
+                TCHAR title[1024] = TEXT("");
+                GetWindowText(hActualWnd, title, ARRAYSIZE(title));
                 //if (IsMinimized(hWnd))
                     //lstrcat(title, TEXT("*"));
 
@@ -504,22 +527,14 @@ void RootWindow::FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonito
 
                 HICON hIcon = NULL;
                 if (hIcon == NULL)
-                    hIcon = reinterpret_cast<HICON>(static_cast<INT_PTR>(MySendMessageTimeout(hWnd, WM_GETICON, ICON_BIG, GetSystemMetrics(SM_CXICON), SMTO_ABORTIFHUNG | SMTO_ERRORONEXIT, 100)));
+                    hIcon = reinterpret_cast<HICON>(static_cast<INT_PTR>(MySendMessageTimeout(hActualWnd, WM_GETICON, ICON_BIG, GetSystemMetrics(SM_CXICON), SMTO_ABORTIFHUNG | SMTO_ERRORONEXIT, 100)));
+                //if (hIcon == NULL && hActualWnd != hWnd)
+                    //hIcon = ExtractIcon(g_hInstance, strExe, 0);
                 if (hIcon == NULL)
-                    hIcon = reinterpret_cast<HICON>(GetClassLongPtr(hWnd, GCLP_HICON));
+                    hIcon = reinterpret_cast<HICON>(GetClassLongPtr(hActualWnd, GCLP_HICON));
                 if (hIcon == NULL)
                     hIcon = LoadIcon(NULL, IDI_APPLICATION);
                 // TODO Get an icon for UWP apps
-
-#if 0 // UWP test
-                HANDLE hProcess = GetProcessHandleFromHwnd(hWnd);
-                WCHAR name[1024];
-                UINT32 length = ARRAYSIZE(name);
-                if (GetPackageFullName(hProcess, &length, name) == ERROR_SUCCESS)
-                {
-                    length = length;
-                }
-#endif
 
                 const int i = m_hWndChild.AddString(title);
                 m_hWndChild.SetItemIcon(i, hIcon);
@@ -527,7 +542,7 @@ void RootWindow::FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonito
                     m_hWndChild.SetItemRightString(i, strProduct);
                 else
                     m_hWndChild.SetItemRightString(i, PathFindFileName(strExe));
-                m_hWndChild.SetItemGray(i, IsMinimized(hWnd));
+                m_hWndChild.SetItemGray(i, IsMinimized(hActualWnd));
                 m_hWndChild.SetItemData(i, reinterpret_cast<LPARAM>(hWnd));
                 if (hActiveWnd == hWnd || hActiveWnd == GetLastActivePopup(hWnd))
                     selected = i;

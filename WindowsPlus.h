@@ -49,6 +49,7 @@ inline LONG Height(RECT r)
 
 void SetWindowBlur(HWND hWnd);
 std::vector<HWND> GetWindows();
+std::vector<HWND> GetWindows(HWND hWndParent);
 std::vector<HMONITOR> GetMonitors();
 HMONITOR GetPrimaryMonitor(const std::vector<HMONITOR>& ms);
 

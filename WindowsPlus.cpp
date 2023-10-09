@@ -118,6 +118,13 @@ std::vector<HWND> GetWindows()
     return w;
 }
 
+std::vector<HWND> GetWindows(HWND hWndParent)
+{
+    std::vector<HWND> w;
+    EnumChildWindows(hWndParent, MyEnumWindows, reinterpret_cast<LPARAM>(&w));
+    return w;
+}
+
 static BOOL CALLBACK MyEnumMonitors(HMONITOR hMonitor, HDC hDC, LPRECT pRect, LPARAM lParam)
 {
     std::vector<HMONITOR>& w(*reinterpret_cast<std::vector<HMONITOR>*>(lParam));

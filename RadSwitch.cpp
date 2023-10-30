@@ -523,10 +523,19 @@ void RootWindow::FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonito
                 //if (IsMinimized(hWnd))
                     //lstrcat(title, TEXT("*"));
 
-                TCHAR strProduct[1024] = TEXT("");
-                GetProductName(strExe, strProduct);
-
                 const std::wstring strAppId = GetAppId(hWnd);
+
+                std::wstring strDisplayName;
+                if (strDisplayName.empty() && !strAppId.empty())
+                    strDisplayName = GetDisplayName(strAppId);
+                if (strDisplayName.empty())
+                {
+                    TCHAR strProduct[1024] = TEXT("");
+                    GetProductName(strExe, strProduct);
+                    strDisplayName = strProduct;
+                }
+                if (strDisplayName.empty())
+                    strDisplayName = PathFindFileName(strExe);
 
                 HICON hIcon = NULL;
                 if (hIcon == NULL)
@@ -543,10 +552,7 @@ void RootWindow::FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonito
 
                 const int i = m_hWndChild.AddString(title);
                 m_hWndChild.SetItemIcon(i, hIcon);
-                if (strProduct[0] != TEXT('\0'))
-                    m_hWndChild.SetItemRightString(i, strProduct);
-                else
-                    m_hWndChild.SetItemRightString(i, PathFindFileName(strExe));
+                m_hWndChild.SetItemRightString(i, strDisplayName.c_str());
                 m_hWndChild.SetItemGray(i, IsMinimized(hActualWnd));
                 m_hWndChild.SetItemData(i, reinterpret_cast<LPARAM>(hWnd));
                 if (hActiveWnd == hWnd || hActiveWnd == GetLastActivePopup(hWnd))

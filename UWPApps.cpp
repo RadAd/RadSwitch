@@ -32,7 +32,7 @@ std::wstring GetPropertyStoreString(IPropertyStore* pStore, REFPROPERTYKEY key)
 
 #if 0 // TODO Convert
         case VT_LPSTR:
-             res = val.pszVal;
+            res = val.pszVal;
             break;
 #endif
 
@@ -97,7 +97,22 @@ std::wstring GetAppId(HWND hWnd)
     if (!pPropStore)
         return {};
 
+    //DumpPropertyStore(pPropStore);
+
     return GetPropertyStoreString(pPropStore, PKEY_AppUserModel_ID);
+}
+
+std::wstring GetDisplayName(const std::wstring& strAppId)
+{
+    CComPtr<IShellItem2> target;
+    CHECK_HR_RET(SHCreateItemInKnownFolder(FOLDERID_AppsFolder, 0, strAppId.c_str(), IID_PPV_ARGS(&target)), NULL);
+
+    CComPtr<IPropertyStore> pStore;
+    CHECK_HR_RET(target->BindToHandler(NULL, BHID_PropertyStore, IID_PPV_ARGS(&pStore)), NULL);
+
+    //DumpPropertyStore(pStore);
+
+    return GetPropertyStoreString(pStore, PKEY_ItemNameDisplay);
 }
 
 HICON GetIconForAppId(const std::wstring& strAppId, SIZE sz)

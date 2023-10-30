@@ -178,6 +178,7 @@ private:
         if (lpDeleteItem->hwndItem == *this)
         {
             ItemData* pData = reinterpret_cast<ItemData*>(lpDeleteItem->itemData);
+            DestroyIcon(pData->hIcon);
             delete pData;
         }
     }

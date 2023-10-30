@@ -12,6 +12,7 @@
 
 #include "WindowsPlus.h"
 #include "ListBoxPlus.h"
+#include "UWPApps.h"
 #include "Rad/AboutDlg.h"
 
 #include "resource.h"
@@ -525,11 +526,15 @@ void RootWindow::FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonito
                 TCHAR strProduct[1024] = TEXT("");
                 GetProductName(strExe, strProduct);
 
+                const std::wstring strAppId = GetAppId(hWnd);
+
                 HICON hIcon = NULL;
                 if (hIcon == NULL)
                     hIcon = reinterpret_cast<HICON>(static_cast<INT_PTR>(MySendMessageTimeout(hActualWnd, WM_GETICON, ICON_BIG, GetSystemMetrics(SM_CXICON), SMTO_ABORTIFHUNG | SMTO_ERRORONEXIT, 100)));
                 //if (hIcon == NULL && hActualWnd != hWnd)
                     //hIcon = ExtractIcon(g_hInstance, strExe, 0);
+                if (hIcon == NULL && !strAppId.empty())
+                    hIcon = GetIconForAppId(strAppId, { GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON) });
                 if (hIcon == NULL)
                     hIcon = reinterpret_cast<HICON>(GetClassLongPtr(hActualWnd, GCLP_HICON));
                 if (hIcon == NULL)

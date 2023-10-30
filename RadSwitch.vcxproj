@@ -65,6 +65,8 @@
     <ClCompile Include="Rad\MessageHandler.cpp" />
     <ClCompile Include="Rad\Window.cpp" />
     <ClCompile Include="Rad\WinError.cpp" />
+    <ClCompile Include="UWPApps.cpp" />
+    <ClCompile Include="UWPResources.cpp" />
     <ClCompile Include="WindowsPlus.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
@@ -81,6 +83,8 @@
     <ClInclude Include="Rad\Windowxx.h" />
     <ClInclude Include="Rad\WinError.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="UWPApps.h" />
+    <ClInclude Include="UWPResources.h" />
     <ClInclude Include="WindowsPlus.h" />
   </ItemGroup>
   <ItemGroup>

@@ -2,7 +2,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <tchar.h>
-//#include <objbase.h>
+#include <objbase.h>
 //#include <commctrl.h>
 
 HINSTANCE g_hInstance = NULL;

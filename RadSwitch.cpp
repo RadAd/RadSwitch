@@ -36,14 +36,19 @@ static HWND g_hWnd{ NULL };
 
 #define LIST_ID 101
 
-bool IsTaskSwitcher(HWND hWnd)
+inline bool IsTaskSwitcher(HWND hWnd)
 {
     TCHAR strClass[1024];
     GetClassName(hWnd, strClass, ARRAYSIZE(strClass));
     return lstrcmp(strClass, TEXT("MultitaskingViewFrame")) == 0;
 }
 
-void ShowLastError(LPCTSTR msg, LPCTSTR function)
+inline bool IsKeyDown(_In_ int nVirtKey)
+{
+    return GetKeyState(nVirtKey) < 0;
+}
+
+inline void ShowLastError(LPCTSTR msg, LPCTSTR function)
 {
     TCHAR fullmsg[1024];
     wsprintf(fullmsg, TEXT("%s - Failed in %s"), msg, function);
@@ -78,7 +83,7 @@ void ForceForegroundWindow(HWND hWnd)
 }
 #endif
 
-RECT CalcSizeListBox(HWND hWndLB, LONG max)
+inline RECT CalcSizeListBox(HWND hWndLB, LONG max)
 {
     const int iItemHeight = ListBox_GetItemHeight(hWndLB, 0);
     const int iItemCount = ListBox_GetCount(hWndLB);
@@ -102,7 +107,7 @@ inline int ListBox_WrapIndex(HWND hWnd, int i)
     return i;
 }
 
-HANDLE GetProcessHandleFromHwnd(HWND hWnd)
+inline HANDLE GetProcessHandleFromHwnd(HWND hWnd)
 {
     DWORD pid = 0;
     if (GetWindowThreadProcessId(hWnd, &pid) == 0)
@@ -111,7 +116,7 @@ HANDLE GetProcessHandleFromHwnd(HWND hWnd)
     return OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
 }
 
-BOOL QueryFullProcessImageNameFromHwnd(HWND hWnd, _Out_writes_to_(dwSize, dwSize) LPTSTR lpExeName, _Inout_ DWORD dwSize)
+inline BOOL QueryFullProcessImageNameFromHwnd(HWND hWnd, _Out_writes_to_(dwSize, dwSize) LPTSTR lpExeName, _Inout_ DWORD dwSize)
 {
     lpExeName[0] = TEXT('\0');
 
@@ -174,11 +179,12 @@ static LRESULT CALLBACK KeyboardllHook(const int nCode, const WPARAM wParam, con
     if (nCode >= 0 && g_hWnd != NULL)
     {
         const KBDLLHOOKSTRUCT* kbdStruct = (KBDLLHOOKSTRUCT*) lParam;
+        static bool bCloseWhenRelease = false;
 
         switch (wParam)
         {
         case WM_KEYDOWN: case WM_SYSKEYDOWN:
-            if (GetKeyState(VK_MENU) < 0 && !IsTaskSwitcher(GetForegroundWindow()))
+            if (IsKeyDown(VK_MENU) && !IsTaskSwitcher(GetForegroundWindow()))
             {
                 if (GetForegroundWindow() == g_hWnd)
                 {
@@ -190,10 +196,12 @@ static LRESULT CALLBACK KeyboardllHook(const int nCode, const WPARAM wParam, con
                 {
                 case VK_TAB:
                     //SendMessage(g_hWnd, WM_START, FALSE, (LPARAM) MonitorFromWindow(GetForegroundWindow(), MONITOR_DEFAULTTOPRIMARY));
+                    bCloseWhenRelease = !IsKeyDown(VK_CONTROL);
                     SendHotKey(HK_1_MOD, HK_1_KEY);
                     return 1;
                 case VK_OEM_3: // Backtick
                     //PostMessage(g_hWnd, WM_START, TRUE, (LPARAM) MonitorFromWindow(GetForegroundWindow(), MONITOR_DEFAULTTOPRIMARY));
+                    bCloseWhenRelease = !IsKeyDown(VK_CONTROL);
                     SendHotKey(HK_2_MOD, HK_2_KEY);
                     return 1;
                 }
@@ -204,7 +212,7 @@ static LRESULT CALLBACK KeyboardllHook(const int nCode, const WPARAM wParam, con
             {
             case VK_LMENU: case VK_RMENU:
             {
-                if (GetForegroundWindow() == g_hWnd)
+                if (bCloseWhenRelease && GetForegroundWindow() == g_hWnd)
                 {
                     PostMessage(g_hWnd, WM_STOP, 0, 0);
                     //return 1;
@@ -327,7 +335,7 @@ int RootWindow::OnVkeyToItem(UINT vk, HWND hWndListbox, int iCaret)
         switch (vk)
         {
         case VK_TAB: case VK_OEM_3:
-            m_hWndChild.SetCurSel(ListBox_WrapIndex(m_hWndChild, iCaret + (GetKeyState(VK_SHIFT) < 0 ? -1 : +1)));
+            m_hWndChild.SetCurSel(ListBox_WrapIndex(m_hWndChild, iCaret + (IsKeyDown(VK_SHIFT) ? -1 : +1)));
             return -2;
         case VK_ESCAPE:
             ShowWindow(*this, SW_HIDE);
@@ -561,7 +569,7 @@ void RootWindow::FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonito
         }
     }
     m_hWndChild.SetTopIndex(0);
-    m_hWndChild.SetCurSel(ListBox_WrapIndex(m_hWndChild, selected + (GetKeyState(VK_SHIFT) < 0 ? -1 : +1)));
+    m_hWndChild.SetCurSel(ListBox_WrapIndex(m_hWndChild, selected + (IsKeyDown(VK_SHIFT) ? -1 : +1)));
 }
 
 void RootWindow::Switch(int iCaret)

@@ -105,10 +105,10 @@ std::wstring GetAppId(HWND hWnd)
 std::wstring GetDisplayName(const std::wstring& strAppId)
 {
     CComPtr<IShellItem2> target;
-    CHECK_HR_RET(SHCreateItemInKnownFolder(FOLDERID_AppsFolder, 0, strAppId.c_str(), IID_PPV_ARGS(&target)), NULL);
+    CHECK_HR_RET(SHCreateItemInKnownFolder(FOLDERID_AppsFolder, 0, strAppId.c_str(), IID_PPV_ARGS(&target)), std::wstring());
 
     CComPtr<IPropertyStore> pStore;
-    CHECK_HR_RET(target->BindToHandler(NULL, BHID_PropertyStore, IID_PPV_ARGS(&pStore)), NULL);
+    CHECK_HR_RET(target->BindToHandler(NULL, BHID_PropertyStore, IID_PPV_ARGS(&pStore)), std::wstring());
 
     //DumpPropertyStore(pStore);
 

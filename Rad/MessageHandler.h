@@ -15,7 +15,7 @@ public:
 protected:
     virtual ~MessageHandler() = default;
     virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
-    INT_PTR ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, bool& bHandled);
+    LRESULT ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, bool& bHandled);
 
     void SetHandled(bool bHandled) { m_msg->m_bHandled = bHandled; }
     bool IsHandled() const { return m_msg->m_bHandled; }

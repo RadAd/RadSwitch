@@ -259,6 +259,8 @@ private:
     int OnVkeyToItem(UINT vk, HWND hwndListbox, int iCaret);
     void OnHotKey(int idHotKey, UINT fuModifiers, UINT vk);
     void OnActivate(UINT state, HWND hwndActDeact, BOOL fMinimized);
+    void OnCommand(int id, HWND hWndCtl, UINT codeNotify);
+    HBRUSH OnCtlColor(HDC hDC, HWND hWndChild, int type);
 
     static LPCTSTR ClassName() { return TEXT("RadSwitch"); }
 
@@ -291,7 +293,7 @@ BOOL RootWindow::OnCreate(const LPCREATESTRUCT lpCreateStruct)
 
     RECT r;
     GetWindowRect(*this, &r);
-    m_hWndChild.Create(*this, WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_HASSTRINGS | LBS_WANTKEYBOARDINPUT | LBS_OWNERDRAWFIXED, r, LIST_ID);
+    m_hWndChild.Create(*this, WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_HASSTRINGS | LBS_WANTKEYBOARDINPUT | LBS_OWNERDRAWFIXED | LBS_NOTIFY, r, LIST_ID);
 
     CHECK(RegisterHotKey(*this, HK_1, HK_1_MOD, HK_1_KEY));
     CHECK(RegisterHotKey(*this, HK_2, HK_2_MOD, HK_2_KEY));
@@ -409,6 +411,26 @@ void RootWindow::OnActivate(UINT state, HWND hwndActDeact, BOOL fMinimized)
         ShowWindow(*this, SW_HIDE);
 }
 
+void RootWindow::OnCommand(int id, HWND hWndCtl, UINT codeNotify)
+{
+    switch (id)
+    {
+    case LIST_ID:
+        switch (codeNotify)
+        {
+        case LBN_DBLCLK:
+            Switch(m_hWndChild.GetCurSel());
+        }
+        break;
+    }
+}
+
+HBRUSH RootWindow::OnCtlColor(HDC hDC, HWND hWndChild, int type)
+{
+    return g_Theme.brWindow;
+}
+
+
 LRESULT RootWindow::HandleMessage(const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
 {
     LRESULT ret = 0;
@@ -421,6 +443,8 @@ LRESULT RootWindow::HandleMessage(const UINT uMsg, const WPARAM wParam, const LP
         HANDLE_MSG(WM_VKEYTOITEM, OnVkeyToItem);
         HANDLE_MSG(WM_HOTKEY, OnHotKey);
         HANDLE_MSG(WM_ACTIVATE, OnActivate);
+        HANDLE_MSG(WM_COMMAND, OnCommand);
+        HANDLE_MSG(WM_CTLCOLORLISTBOX, OnCtlColor);
     case WM_START:
     {
         SetHandled(TRUE);
@@ -462,13 +486,6 @@ LRESULT RootWindow::HandleMessage(const UINT uMsg, const WPARAM wParam, const LP
     if (!IsHandled())
         ret = Window::HandleMessage(uMsg, wParam, lParam);
 
-    switch (uMsg)
-    {
-    case WM_CTLCOLORLISTBOX:
-        ret = (LRESULT) g_Theme.brWindow;
-        break;
-    }
-
     return ret;
 }
 
@@ -477,7 +494,6 @@ void RootWindow::FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonito
     TCHAR strActiveExe[MAX_PATH]{ TEXT("") };
     if (!FilterToActive || !QueryFullProcessImageNameFromHwnd(hActiveWnd, strActiveExe, ARRAYSIZE(strActiveExe)))
         strActiveExe[0] = TEXT('\0');
-
 
     const std::vector<HWND> w = GetWindows();
 

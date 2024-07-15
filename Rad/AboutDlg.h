@@ -11,5 +11,7 @@ private:
     void OnCommand(int id, HWND hWndCtl, UINT codeNotify);
 
 protected:
+    using Dialog::DoModal;
+
     virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 };

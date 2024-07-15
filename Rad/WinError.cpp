@@ -5,6 +5,8 @@
 #include "MemoryPlus.h"
 #include "Format.h"
 
+thread_local HRESULT g_raderrorhr = ERROR_SUCCESS;
+
 std::string WinError::getMessage(DWORD dwError, LPCSTR szModule, LPCSTR szContext)
 {
     const HMODULE hLibrary = szModule != nullptr ? GetModuleHandleA(szModule) : NULL;
@@ -26,7 +28,7 @@ std::string WinError::getMessage(DWORD dwError, LPCSTR szModule, LPCSTR szContex
         return Format("StringCchLength failed with 0x%08x", GetLastError());
 
     pMessage[len - 2] = TEXT('\0');
-    return Format("%s -> 0x%08x %s", szContext, dwError, pMessage.get());
+    return szContext ? Format("%s -> 0x%08x %s", szContext, dwError, pMessage.get()) : Format("0x%08x %s", dwError, pMessage.get());
 }
 
 std::wstring WinError::getMessage(DWORD dwError, LPCWSTR szModule, LPCWSTR szContext)
@@ -51,4 +53,10 @@ std::wstring WinError::getMessage(DWORD dwError, LPCWSTR szModule, LPCWSTR szCon
 
     pMessage[len - 2] = TEXT('\0');
     return Format(L"%s -> 0x%08x %s", szContext, dwError, pMessage.get());
+}
+
+std::error_category& win32_category() noexcept
+{
+    static win32_error_category w32ec;
+    return w32ec;
 }

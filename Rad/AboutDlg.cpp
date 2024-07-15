@@ -10,7 +10,7 @@ extern HINSTANCE g_hInstance;
 
 INT_PTR AboutDlg::DoModal(HWND hWndParent)
 {
-    return Dialog::DoModal(new AboutDlg, IDD_ABOUT, hWndParent);
+    return AboutDlg().DoModal(IDD_ABOUT, hWndParent);
 }
 
 BOOL AboutDlg::OnInitDialog(HWND hwndFocus, LPARAM lParam)

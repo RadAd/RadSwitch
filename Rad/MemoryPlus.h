@@ -4,7 +4,7 @@
 // Not needed in C++17
 // eg AutoUniquePtr<char>(malloc(100), free)
 template <class C, class F>
-auto AutoUniquePtr(C c, F f)
+auto AutoUniquePtr(typename std::unique_ptr<C, F>::pointer c, F f)
 {
     return std::unique_ptr<C, F>(c, f);
 }
@@ -34,6 +34,9 @@ auto MakeUniqueHandle(P p, F f)
 {
     return std::unique_ptr<P, HandleDeleter<P, F>>(p, f);
 }
+
+inline auto AutoGetDC(HWND hWnd) { return MakeUniqueHandle(GetDC(hWnd), [hWnd](HDC hDC) { ReleaseDC(hWnd, hDC); }); }
+inline auto AutoSelectObject(HDC hDC, HGDIOBJ hObj) { return MakeUniqueHandle(SelectObject(hDC, hObj), [hDC](HGDIOBJ hObj) { SelectObject(hDC, hObj); }); }
 
 template<class P>
 struct GlobalUnlocker

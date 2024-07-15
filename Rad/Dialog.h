@@ -10,6 +10,10 @@ public:
 protected:
     static HWND Create(Dialog* pDlg, int Resource, HWND hWndParent, LPARAM dwInitParam = 0);
     static INT_PTR DoModal(Dialog* pDlg, int Resource, HWND hWndParent, LPARAM dwInitParam = 0);
+    INT_PTR DoModal(int Resource, HWND hWndParent, LPARAM dwInitParam = 0)
+    {
+        return DoModal(this, Resource, hWndParent, dwInitParam);
+    }
 
     virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 

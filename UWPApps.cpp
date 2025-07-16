@@ -7,7 +7,7 @@
 #include <shellapi.h>
 #include <ShlObj.h>
 
-#include "Rad/Log.h"
+#include "Rad/WinError.h"
 #include "Rad/Format.h"
 
 #include <vector>

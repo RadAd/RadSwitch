@@ -1,4 +1,7 @@
 #include "Dialog.h"
+#include "WinError.h"
+
+#include <set>
 
 extern HINSTANCE g_hInstance;
 extern HWND g_hWndDlg;
@@ -16,13 +19,17 @@ namespace
 HWND Dialog::Create(Dialog* pDlg, int Resource, HWND hWndParent, LPARAM dwInitParam)
 {
     CreateDlgParams p = { dwInitParam, false, pDlg };
-    return CreateDialogParam(g_hInstance, MAKEINTRESOURCE(Resource), hWndParent, s_DlgProc, (LPARAM) &p);
+    const HWND hDlg = CreateDialogParam(g_hInstance, MAKEINTRESOURCE(Resource), hWndParent, s_DlgProc, (LPARAM) &p);
+    CHECK_LE(hDlg != NULL);
+    return hDlg;
 }
 
 INT_PTR Dialog::DoModal(Dialog* pDlg, int Resource, HWND hWndParent, LPARAM dwInitParam)
 {
     CreateDlgParams p = { dwInitParam, true, pDlg };
-    return DialogBoxParam(g_hInstance, MAKEINTRESOURCE(Resource), hWndParent, s_DlgProc, (LPARAM) &p);
+    const INT_PTR ret = DialogBoxParam(g_hInstance, MAKEINTRESOURCE(Resource), hWndParent, s_DlgProc, (LPARAM) &p);
+    CHECK_LE(ret != -1);
+    return ret;
 }
 
 LRESULT Dialog::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -61,6 +68,10 @@ INT_PTR Dialog::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 INT_PTR CALLBACK Dialog::s_DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    thread_local int calldepth = 0;
+    thread_local std::set<Dialog*> todelete;
+    ++calldepth;
+
     Dialog* self = reinterpret_cast<Dialog*>(GetWindowLongPtr(hWnd, DWLP_USER));
     if (uMsg == WM_INITDIALOG)
     {
@@ -81,11 +92,17 @@ INT_PTR CALLBACK Dialog::s_DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 
     const INT_PTR ret = self ? self->ProcessMessage(uMsg, wParam, lParam) : 0;
 
-    if (uMsg == WM_NCDESTROY)
+    if (self != nullptr && uMsg == WM_NCDESTROY && !self->IsModal())
+        todelete.insert(self);
+
+    --calldepth;
+    if (calldepth == 0)
     {
-        _ASSERTE(self != nullptr);
-        SetWindowLongPtr(hWnd, DWLP_USER, 0);
-        self->Delete();
+        for (Dialog* wnd : todelete)
+        {
+            SetWindowLongPtr(*wnd, DWLP_USER, 0);
+            delete wnd;
+        }
     }
 
     return ret;

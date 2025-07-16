@@ -77,6 +77,14 @@
 #define HANDLEX_WM_DESTROY(wParam, lParam, fn) \
     ((fn)(), 0L)
 
+/* void Cls::OnEnterSizeMove() */
+#define HANDLEX_WM_ENTERSIZEMOVE(wParam, lParam, fn) \
+    ((fn)(), 0L)
+
+/* void Cls::OnExitSizeMove() */
+#define HANDLEX_WM_EXITSIZEMOVE(wParam, lParam, fn) \
+    ((fn)(), 0L)
+
 /* void Cls::OnNCDestroy() */
 #define HANDLEX_WM_NCDESTROY(wParam, lParam, fn) \
     ((fn)(), 0L)

@@ -6,15 +6,6 @@
 #define CHECK(x) if (!(x)) RadLog(LOG_ASSERT, TEXT(#x), SRC_LOC)
 #define CHECK_RET(x,r) if (!(x)) { RadLog(LOG_ASSERT, TEXT(#x), SRC_LOC); return (r); }
 
-#ifdef __cplusplus
-#include "WinError.h"
-#define CHECK_LE(x) if (!(x)) RadLog(LOG_ASSERT, WinError::getMessage(GetLastError(), nullptr, TEXT(#x)), SRC_LOC)
-#define CHECK_LE_RET(x, r) if (!(x)) { RadLog(LOG_ASSERT, WinError::getMessage(GetLastError(), nullptr, TEXT(#x)), SRC_LOC); return (r); }
-#define CHECK_HR(x) if (FAILED(g_radloghr = x)) RadLog(LOG_ASSERT, WinError::getMessage(g_radloghr, nullptr, TEXT(#x)), SRC_LOC)
-#define CHECK_HR_RET(x, r) if (FAILED(g_radloghr = x)) { RadLog(LOG_ASSERT, WinError::getMessage(g_radloghr, nullptr, TEXT(#x)), SRC_LOC); return (r); }
-extern thread_local HRESULT g_radloghr;
-#endif
-
 enum LogLevel {
     LOG_DEBUG,
     LOG_INFO,

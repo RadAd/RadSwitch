@@ -55,8 +55,66 @@ std::wstring WinError::getMessage(DWORD dwError, LPCWSTR szModule, LPCWSTR szCon
     return Format(L"%s -> 0x%08x %s", szContext, dwError, pMessage.get());
 }
 
+std::string WinError::getMessage(HRESULT hr, LPCSTR szModule, LPCSTR szContext)
+{
+    if (szModule != nullptr)
+        return getMessage(DWORD(hr), szModule, szContext);
+    else if (HRESULT_FACILITY(hr) == FACILITY_WIN32)
+        return getMessage(DWORD(HRESULT_CODE(hr)), szModule, szContext);
+    else
+        return Format("Not a FACILITY_WIN32 error code 0x%08x", hr); 
+}
+
+std::wstring WinError::getMessage(HRESULT hr, LPCWSTR szModule, LPCWSTR szContext)
+{
+    if (szModule != nullptr)
+        return getMessage(DWORD(hr), szModule, szContext);
+    else if (HRESULT_FACILITY(hr) == FACILITY_WIN32)
+        return getMessage(DWORD(HRESULT_CODE(hr)), szModule, szContext);
+    else
+        return Format(L"Not a FACILITY_WIN32 error code 0x%08x", hr);
+}
+
+class win32_error_category : public std::error_category
+{
+public:
+    constexpr win32_error_category() noexcept : std::error_category(_Generic_addr) {}
+
+    _NODISCARD const char* name() const noexcept override
+    {
+        return "win32";
+    }
+
+    _NODISCARD std::string message(int errcode) const override
+    {
+        return WinError::getMessage(DWORD(errcode), LPCSTR(nullptr), LPCSTR(nullptr));
+    }
+};
+
 std::error_category& win32_category() noexcept
 {
     static win32_error_category w32ec;
     return w32ec;
+}
+
+class hr_error_category : public std::error_category
+{
+public:
+    constexpr hr_error_category() noexcept : std::error_category(_Generic_addr) {}
+
+    _NODISCARD const char* name() const noexcept override
+    {
+        return "hresult";
+    }
+
+    _NODISCARD std::string message(int errcode) const override
+    {
+        return WinError::getMessage(DWORD(errcode), LPCSTR(nullptr), LPCSTR(nullptr));
+    }
+};
+
+std::error_category& hr_category() noexcept
+{
+    static hr_error_category hrec;
+    return hrec;
 }

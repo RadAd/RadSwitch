@@ -239,16 +239,29 @@ RECT GetPosition(HMONITOR hMonitor)
 class RootWindow : public Window
 {
     friend WindowManager<RootWindow>;
-
+    struct Class
+    {
+        static LPCTSTR ClassName() { return TEXT("RadSwitch"); }
+        static void GetWndClass(WNDCLASS& wc)
+        {
+            //MainClass::GetWndClass(wc);
+            wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+            wc.hIcon = LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_MAIN));
+            wc.hbrBackground = g_Theme.brWindow;
+        }
+        static void GetCreateWindow(CREATESTRUCT& cs)
+        {
+            //MainClass::GetCreateWindow(cs);
+            cs.style = WS_POPUP | WS_BORDER;
+            cs.dwExStyle |= WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
+        }
+    };
 public:
-    static bool IsExisting() { return FindWindow(ClassName(), nullptr) != NULL; }
-    static ATOM Register() { return WindowManager<RootWindow>::Register(); }
-    static RootWindow* Create() { return WindowManager<RootWindow>::Create(); }
+    static bool IsExisting() { return FindWindow(Class::ClassName(), nullptr) != NULL; }
+    static ATOM Register() { return ::Register<Class>(); }
+    static RootWindow* Create() { return WindowManager<RootWindow>::Create(NULL, TEXT("Rad Switch")); }
 
 protected:
-    static void GetCreateWindow(CREATESTRUCT& cs);
-    static void GetWndClass(WNDCLASS& wc);
-
     LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 
 private:
@@ -262,8 +275,6 @@ private:
     void OnCommand(int id, HWND hWndCtl, UINT codeNotify);
     HBRUSH OnCtlColor(HDC hDC, HWND hWndChild, int type);
 
-    static LPCTSTR ClassName() { return TEXT("RadSwitch"); }
-
     void FillList(HWND hActiveWnd, BOOL FilterToActive, HMONITOR hMonitor);
     void Switch(int iCaret);
 
@@ -271,21 +282,6 @@ private:
     BOOL m_FilterToActive = FALSE;
     HMONITOR m_hMonitor = NULL;
 };
-
-void RootWindow::GetCreateWindow(CREATESTRUCT& cs)
-{
-    Window::GetCreateWindow(cs);
-    cs.lpszName = TEXT("Rad Switch");
-    cs.style = WS_POPUP | WS_BORDER;
-    cs.dwExStyle |= WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
-}
-
-void RootWindow::GetWndClass(WNDCLASS& wc)
-{
-    Window::GetWndClass(wc);
-    wc.hIcon = LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_MAIN));
-    wc.hbrBackground = g_Theme.brWindow;
-}
 
 BOOL RootWindow::OnCreate(const LPCREATESTRUCT lpCreateStruct)
 {

@@ -1,4 +1,5 @@
 #include "Window.h"
+#include <set>
 #include <algorithm>
 
 extern HINSTANCE g_hInstance;
@@ -18,22 +19,43 @@ HWND CreateWnd(const CREATESTRUCT& cs, const Window* wnd)
     return ::CreateWindowEx(cs.dwExStyle, cs.lpszClass, cs.lpszName, cs.style, cs.x, cs.y, cs.cx, cs.cy, cs.hwndParent, cs.hMenu, cs.hInstance, &cwp);
 }
 
-void Window::GetCreateWindow(CREATESTRUCT& cs)
+inline void GetDefaultWndClass(WNDCLASS& wc)
 {
-    cs.x = CW_USEDEFAULT;
-    cs.y = CW_USEDEFAULT;
-    cs.cx = CW_USEDEFAULT;
-    cs.cy = CW_USEDEFAULT;
+    wc.style |= CS_DBLCLKS;
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    //wc.hbrBackground = (HBRUSH) (COLOR_WINDOW + 1);
+    wc.hbrBackground = GetSysColorBrush(COLOR_WINDOW);
+}
+
+LPCTSTR MainClass::ClassName() { return TEXT("RadMain"); }
+
+void MainClass::GetWndClass(WNDCLASS& wc)
+{
+    GetDefaultWndClass(wc);
+    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+}
+
+void MainClass::GetCreateWindow(CREATESTRUCT& cs)
+{
+    cs.style |= WS_OVERLAPPEDWINDOW;
+}
+
+LPCTSTR ChildClass::ClassName() { return TEXT("RadChild"); }
+
+void ChildClass::GetWndClass(WNDCLASS& wc)
+{
+    GetDefaultWndClass(wc);
+}
+
+void ChildClass::GetCreateWindow(CREATESTRUCT& cs)
+{
+    cs.style |= WS_CHILD | WS_VISIBLE;
 }
 
 void Window::GetWndClass(WNDCLASS& wc)
 {
     wc.lpfnWndProc = s_WndProc;
     wc.hInstance = g_hInstance;
-    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    //wc.hbrBackground = (HBRUSH) (COLOR_WINDOW + 1);
-    wc.hbrBackground = GetSysColorBrush(COLOR_WINDOW);
 }
 
 LRESULT Window::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -47,6 +69,10 @@ LRESULT Window::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 LRESULT CALLBACK Window::s_WndProc(const HWND hWnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam)
 {
+    thread_local int calldepth = 0;
+    thread_local std::set<Window*> todelete;
+    ++calldepth;
+
     Window* self = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
     if (uMsg == WM_NCCREATE)
     {
@@ -68,11 +94,17 @@ LRESULT CALLBACK Window::s_WndProc(const HWND hWnd, const UINT uMsg, const WPARA
         ? self->ProcessMessage(uMsg, wParam, lParam)
         : DefWindowProc(hWnd, uMsg, wParam, lParam);
 
-    if (uMsg == WM_NCDESTROY)
+    if (self != nullptr && uMsg == WM_NCDESTROY)
+        todelete.insert(self);
+
+    --calldepth;
+    if (calldepth == 0)
     {
-        _ASSERTE(self != nullptr);
-        SetWindowLongPtr(hWnd, GWLP_USERDATA, 0);
-        self->Delete();
+        for (Window* wnd : todelete)
+        {
+            SetWindowLongPtr(*wnd, DWLP_USER, 0);
+            delete wnd;
+        }
     }
 
     return ret;

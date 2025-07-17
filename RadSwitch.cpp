@@ -14,10 +14,11 @@
 #include "ListBoxPlus.h"
 #include "UWPApps.h"
 #include "Rad/AboutDlg.h"
+#include "Rad/WinError.h"
 
 #include "resource.h"
 
-extern HINSTANCE g_hInstance;
+//extern HINSTANCE g_hInstance;
 
 Theme g_Theme;
 
@@ -47,15 +48,6 @@ inline bool IsKeyDown(_In_ int nVirtKey)
 {
     return GetKeyState(nVirtKey) < 0;
 }
-
-inline void ShowLastError(LPCTSTR msg, LPCTSTR function)
-{
-    TCHAR fullmsg[1024];
-    wsprintf(fullmsg, TEXT("%s - Failed in %s"), msg, function);
-    MessageBox(g_hWnd, fullmsg, TEXT("Rad Switch"), MB_OK | MB_ICONERROR);
-}
-
-#define CHECK(x) if (!(x)) ShowLastError(TEXT(#x), TEXT(__FUNCTION__));
 
 #if 0
 void ForceForegroundWindow(HWND hWnd)
@@ -600,6 +592,8 @@ void RootWindow::Switch(int iCaret)
 
 bool Run(_In_ const LPCTSTR lpCmdLine, _In_ const int nShowCmd)
 {
+    RadLogInitWnd(NULL, "RadSwitch", L"RadSwitch");
+
     if (RootWindow::IsExisting())
     {
         MessageBox(NULL, TEXT("Process already exists."), TEXT("Rad Switch"), MB_ICONERROR | MB_OK);
@@ -618,18 +612,12 @@ bool Run(_In_ const LPCTSTR lpCmdLine, _In_ const int nShowCmd)
     g_Theme.brWindow = CreateSolidBrush(g_Theme.clrWindow);
     g_Theme.brHighlight = CreateSolidBrush(g_Theme.clrHighlight);
 
-    if (RootWindow::Register() == 0)
-    {
-        MessageBox(NULL, TEXT("Error registering window class"), TEXT("Rad Switch"), MB_ICONERROR | MB_OK);
-        return false;
-    }
+    CHECK_LE_RET(RootWindow::Register(), false);
 
     RootWindow* prw = RootWindow::Create();
-    if (prw == nullptr)
-    {
-        MessageBox(NULL, TEXT("Error creating root window"), TEXT("Rad Switch"), MB_ICONERROR | MB_OK);
-        return false;
-    }
+    CHECK_LE_RET(prw != nullptr, false);
+
+    RadLogInitWnd(*prw, nullptr, nullptr);
 
     // Needed to allow to capture foreground
     //ShowWindow(*prw, nShowCmd);
